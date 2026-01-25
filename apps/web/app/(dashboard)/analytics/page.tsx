@@ -48,7 +48,8 @@ async function getAnalyticsData(conferenceId?: string) {
     .eq('created_by', user.id)
     .order('created_at', { ascending: false })
 
-  const targetConferenceId = conferenceId || conferences?.[0]?.id
+  const conferencesList = conferences as { id: string; name: string }[] | null
+  const targetConferenceId = conferenceId || conferencesList?.[0]?.id
 
   if (!targetConferenceId) return null
 

@@ -1,13 +1,21 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Sora, Space_Grotesk } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { QueryProvider } from '@/components/query-provider'
 import './globals.css'
 
-const inter = Inter({
+const sora = Sora({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-display',
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
+})
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-body',
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
 })
 
@@ -30,7 +38,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.variable}>
+      <body className={`${spaceGrotesk.variable} ${sora.variable} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

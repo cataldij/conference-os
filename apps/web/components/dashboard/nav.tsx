@@ -73,22 +73,26 @@ export function DashboardNav() {
   const pathname = usePathname()
 
   return (
-    <div className="flex h-screen w-64 flex-col border-r bg-background">
+    <div className="relative flex h-screen w-72 flex-col border-r border-white/60 bg-white/70 backdrop-blur-xl">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_70%)]" />
       {/* Logo */}
-      <div className="flex h-16 items-center border-b px-6">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-            <span className="text-lg font-bold text-primary-foreground">C</span>
+      <div className="relative flex h-20 items-center border-b border-white/70 px-6">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-amber-400 to-teal-400 text-white shadow-soft">
+            <span className="text-lg font-bold">C</span>
           </div>
           <div>
-            <div className="text-sm font-semibold">Conference OS</div>
-            <div className="text-xs text-muted-foreground">Organizer</div>
+            <div className="font-display text-sm font-semibold">Conference OS</div>
+            <div className="text-xs text-muted-foreground">Organizer Suite</div>
           </div>
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 overflow-y-auto p-4 scrollbar-thin">
+      <nav className="relative flex-1 space-y-1 overflow-y-auto p-4 scrollbar-thin">
+        <div className="px-2 pb-2 text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+          Workspace
+        </div>
         {navigation.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
           return (
@@ -96,13 +100,13 @@ export function DashboardNav() {
               key={item.name}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                'group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all',
                 isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'bg-slate-900 text-white shadow-soft'
+                  : 'text-slate-600 hover:bg-white/80 hover:text-slate-900'
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
               {item.name}
             </Link>
           )
@@ -110,9 +114,9 @@ export function DashboardNav() {
       </nav>
 
       {/* User section */}
-      <div className="border-t p-4">
+      <div className="relative border-t border-white/70 p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600">
             <Users className="h-5 w-5" />
           </div>
           <div className="flex-1 truncate">

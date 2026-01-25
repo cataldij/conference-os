@@ -24,6 +24,9 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
+    --glow-blue: 219 100% 70%;
+    --glow-amber: 38 92% 62%;
+    --glow-teal: 188 86% 53%;
   }
 
   .dark {
@@ -55,7 +58,9 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-body), 'Segoe UI', sans-serif;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+    text-rendering: optimizeLegibility;
   }
 }
 
@@ -99,5 +104,93 @@
 
   .animate-out {
     animation: fade-out 0.2s ease-out;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display), var(--font-body), 'Segoe UI', sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  .text-gradient {
+    background: linear-gradient(120deg, hsl(var(--primary)) 0%, #f97316 50%, #14b8a6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .bg-hero {
+    background:
+      radial-gradient(1200px 600px at 8% -10%, rgba(59, 130, 246, 0.22), transparent 60%),
+      radial-gradient(900px 600px at 90% 0%, rgba(245, 158, 11, 0.2), transparent 55%),
+      radial-gradient(900px 700px at 80% 90%, rgba(20, 184, 166, 0.18), transparent 60%),
+      linear-gradient(180deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 50%, rgba(248, 250, 252, 1) 100%);
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(148, 163, 184, 0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
+    background-size: 80px 80px;
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    box-shadow: 0 24px 60px -50px rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(18px);
+  }
+
+  .shadow-soft {
+    box-shadow: 0 24px 70px -50px rgba(15, 23, 42, 0.65);
+  }
+
+  .ring-glow {
+    box-shadow:
+      0 0 0 1px rgba(148, 163, 184, 0.35),
+      0 20px 60px -40px rgba(59, 130, 246, 0.6);
+  }
+
+  .animate-float {
+    animation: float 12s ease-in-out infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 3.5s ease-in-out infinite;
+  }
+
+  .animate-rise {
+    animation: rise 0.8s ease-out both;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

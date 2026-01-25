@@ -86,3 +86,5 @@ __tests__/
 
 # Build artifacts
 *.map
+
+.vercel

@@ -26,8 +26,9 @@ export default async function DashboardLayout({
       {/* Main content */}
       <div className="flex flex-1 flex-col">
         <DashboardHeader />
-        <main className="flex-1 overflow-y-auto bg-muted/30 p-8">
-          {children}
+        <main className="relative flex-1 overflow-y-auto bg-hero p-8">
+          <div className="pointer-events-none absolute inset-0 bg-grid opacity-[0.35]" />
+          <div className="relative">{children}</div>
         </main>
       </div>
     </div>
