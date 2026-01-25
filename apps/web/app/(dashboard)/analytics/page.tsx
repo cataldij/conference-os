@@ -108,7 +108,8 @@ async function getAnalyticsData(conferenceId?: string) {
     .slice(0, 5)
 
   // Process event timeline
-  const eventsByDay = analyticsEvents?.reduce((acc: any, event) => {
+  const events = analyticsEvents as { event_type: string; created_at: string }[] | null
+  const eventsByDay = events?.reduce((acc: any, event) => {
     const date = new Date(event.created_at).toLocaleDateString()
     if (!acc[date]) {
       acc[date] = { date, events: 0 }
@@ -120,7 +121,7 @@ async function getAnalyticsData(conferenceId?: string) {
   const timelineData = Object.values(eventsByDay || {}).slice(-7)
 
   // Event type distribution
-  const eventTypes = analyticsEvents?.reduce((acc: any, event) => {
+  const eventTypes = events?.reduce((acc: any, event) => {
     if (!acc[event.event_type]) {
       acc[event.event_type] = 0
     }
