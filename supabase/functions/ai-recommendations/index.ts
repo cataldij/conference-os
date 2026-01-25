@@ -1,10 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { corsHeaders, verifyAuth, isValidUUID, checkRateLimit } from '../_shared/auth.ts'
 
 interface SessionRecommendation {
   sessionId: string
@@ -18,29 +14,52 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    )
+    // Rate limiting by IP
+    const clientIP = req.headers.get('x-forwarded-for') || 'unknown'
+    if (!checkRateLimit(clientIP, 30, 60000)) {
+      return new Response(
+        JSON.stringify({ error: 'Too many requests' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
-    // Get authenticated user
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser()
-
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+    // Verify authentication
+    const { user, error: authError } = await verifyAuth(req)
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: authError || 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     const { conferenceId } = await req.json()
+
+    // Validate conferenceId format
+    if (!conferenceId || !isValidUUID(conferenceId)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or missing conferenceId' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const supabaseClient = createClient(supabaseUrl, supabaseKey)
+
+    // Verify user is a member of this conference
+    const { data: membership } = await supabaseClient
+      .from('conference_members')
+      .select('id')
+      .eq('conference_id', conferenceId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (!membership) {
+      return new Response(
+        JSON.stringify({ error: 'Not a member of this conference' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Get user's profile and interests
     const { data: profile } = await supabaseClient
@@ -115,6 +134,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
+    console.error('Error:', error)
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

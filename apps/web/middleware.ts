@@ -60,7 +60,9 @@ export async function middleware(req: NextRequest) {
   const isApiRoute = req.nextUrl.pathname.startsWith('/api')
 
   // Redirect to login if accessing protected routes without session
-  if (isDashboardPage && !session) {
+  // TODO: Re-enable auth check for production
+  const bypassAuth = process.env.NODE_ENV === 'development'
+  if (isDashboardPage && !session && !bypassAuth) {
     const redirectUrl = req.nextUrl.clone()
     redirectUrl.pathname = '/login'
     redirectUrl.searchParams.set('redirect', req.nextUrl.pathname)

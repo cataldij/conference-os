@@ -1,9 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { corsHeaders, verifyAuth, sanitizeString, checkRateLimit } from '../_shared/auth.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+// Valid language codes for DeepL
+const VALID_LANGUAGES = new Set([
+  'en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'pl', 'ru', 'ja', 'zh', 'ko', 'ar',
+  'bg', 'cs', 'da', 'el', 'et', 'fi', 'hu', 'id', 'lv', 'lt', 'nb', 'ro', 'sk', 'sl', 'sv', 'tr', 'uk'
+])
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,11 +13,57 @@ serve(async (req) => {
   }
 
   try {
+    // Rate limiting by IP (translation can be expensive)
+    const clientIP = req.headers.get('x-forwarded-for') || 'unknown'
+    if (!checkRateLimit(clientIP, 50, 60000)) {
+      return new Response(
+        JSON.stringify({ error: 'Too many requests' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Verify authentication
+    const { user, error: authError } = await verifyAuth(req)
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: authError || 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const { text, targetLanguage, sourceLanguage } = await req.json()
 
     if (!text || !targetLanguage) {
       return new Response(
         JSON.stringify({ error: 'Missing required parameters: text, targetLanguage' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Validate language codes
+    const targetLangLower = targetLanguage.toLowerCase()
+    if (!VALID_LANGUAGES.has(targetLangLower)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid target language code' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (sourceLanguage) {
+      const sourceLangLower = sourceLanguage.toLowerCase()
+      if (!VALID_LANGUAGES.has(sourceLangLower)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid source language code' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
+    // Sanitize and limit text length (DeepL has limits)
+    const sanitizedText = sanitizeString(text, 5000)
+    if (sanitizedText.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Text is empty after sanitization' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -42,15 +90,15 @@ serve(async (req) => {
       'ja': 'JA',
       'zh': 'ZH',
       'ko': 'KO',
-      'ar': 'AR', // Note: DeepL may not support all languages
+      'ar': 'AR',
     }
 
-    const deeplTargetLang = languageMap[targetLanguage.toLowerCase()] || targetLanguage.toUpperCase()
+    const deeplTargetLang = languageMap[targetLangLower] || targetLanguage.toUpperCase()
     const deeplSourceLang = sourceLanguage ? (languageMap[sourceLanguage.toLowerCase()] || sourceLanguage.toUpperCase()) : undefined
 
     // Call DeepL API
     const formData = new URLSearchParams()
-    formData.append('text', text)
+    formData.append('text', sanitizedText)
     formData.append('target_lang', deeplTargetLang)
     if (deeplSourceLang) {
       formData.append('source_lang', deeplSourceLang)
@@ -74,7 +122,7 @@ serve(async (req) => {
       // Fallback: Return original text if translation fails
       return new Response(
         JSON.stringify({
-          translatedText: text,
+          translatedText: sanitizedText,
           detectedSourceLanguage: sourceLanguage || 'unknown',
           error: 'Translation service temporarily unavailable',
         }),

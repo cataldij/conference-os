@@ -1,10 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { corsHeaders, verifyAuth, isValidUUID, sanitizeString, checkRateLimit } from '../_shared/auth.ts'
 
 interface PushNotificationPayload {
   userIds?: string[]
@@ -20,22 +16,78 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
-
-    // Verify authorization
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+    // Rate limiting by IP (stricter for push notifications)
+    const clientIP = req.headers.get('x-forwarded-for') || 'unknown'
+    if (!checkRateLimit(clientIP, 10, 60000)) {
+      return new Response(
+        JSON.stringify({ error: 'Too many requests' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
+
+    // Verify authentication
+    const { user, error: authError } = await verifyAuth(req)
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: authError || 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const supabaseClient = createClient(supabaseUrl, supabaseKey)
 
     const payload: PushNotificationPayload = await req.json()
     const { userIds, conferenceId, title, body, data } = payload
+
+    // Validate required fields
+    if (!title || !body) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: title, body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Validate UUIDs if provided
+    if (conferenceId && !isValidUUID(conferenceId)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid conferenceId format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (userIds) {
+      for (const userId of userIds) {
+        if (!isValidUUID(userId)) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid userId format in userIds array' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      }
+    }
+
+    // Verify user is an organizer or staff for this conference
+    if (conferenceId) {
+      const { data: membership } = await supabaseClient
+        .from('conference_members')
+        .select('role')
+        .eq('conference_id', conferenceId)
+        .eq('user_id', user.id)
+        .single()
+
+      if (!membership || !['organizer', 'staff'].includes(membership.role)) {
+        return new Response(
+          JSON.stringify({ error: 'Only organizers and staff can send push notifications' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
+    // Sanitize text inputs
+    const sanitizedTitle = sanitizeString(title, 100)
+    const sanitizedBody = sanitizeString(body, 500)
 
     // Get push tokens for target users
     let query = supabaseClient.from('push_tokens').select('token, user_id, platform')
@@ -50,7 +102,18 @@ serve(async (req) => {
         .eq('conference_id', conferenceId)
 
       const memberIds = members?.map((m) => m.user_id) || []
+      if (memberIds.length === 0) {
+        return new Response(
+          JSON.stringify({ success: true, sent: 0, message: 'No members found' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
       query = query.in('user_id', memberIds)
+    } else {
+      return new Response(
+        JSON.stringify({ error: 'Must provide either userIds or conferenceId' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     const { data: tokens } = await query
@@ -70,8 +133,8 @@ serve(async (req) => {
     const expoMessages = expoTokens.map((t) => ({
       to: t.token,
       sound: 'default',
-      title,
-      body,
+      title: sanitizedTitle,
+      body: sanitizedBody,
       data,
     }))
 
@@ -97,8 +160,8 @@ serve(async (req) => {
     for (const token of tokens) {
       await supabaseClient.from('user_notifications').insert({
         user_id: token.user_id,
-        title,
-        body,
+        title: sanitizedTitle,
+        body: sanitizedBody,
         notification_type: 'push',
         reference_id: conferenceId,
       })
@@ -109,6 +172,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
+    console.error('Error:', error)
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
