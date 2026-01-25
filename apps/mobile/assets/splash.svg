@@ -1,0 +1,7 @@
+<svg width="1284" height="2778" viewBox="0 0 1284 2778" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1284" height="2778" fill="#ffffff"/>
+  <rect x="392" y="1089" width="500" height="500" rx="100" fill="#2563eb"/>
+  <circle cx="642" cy="1339" r="150" fill="white" fill-opacity="0.3"/>
+  <circle cx="642" cy="1339" r="80" fill="white"/>
+  <text x="642" y="1750" font-family="Arial, sans-serif" font-size="72" fill="#2563eb" text-anchor="middle" font-weight="bold">Conference OS</text>
+</svg>
