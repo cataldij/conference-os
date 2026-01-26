@@ -1,10 +1,10 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
+import { ImageReveal } from '@/components/marketing/image-reveal'
 import {
   ArrowRight,
   ArrowUpRight,
@@ -278,15 +278,17 @@ export default function HomePage() {
             <motion.div className="relative" variants={fadeUp}>
               <div className="absolute -right-10 top-6 hidden h-28 w-28 rounded-full border border-white/70 lg:block" />
               <div className="relative h-[440px] overflow-hidden rounded-[32px] border border-white/70 bg-white/40 p-6 shadow-soft backdrop-blur-xl">
-                <Image
+                <ImageReveal
                   src={heroBackdrop}
                   alt="Conference keynote with spotlight and large screen"
-                  fill
-                  className="object-cover"
+                  className="pointer-events-none absolute inset-0"
+                  imageClassName="object-cover"
+                  overlayClassName="bg-gradient-to-tr from-slate-950/70 via-slate-900/30 to-transparent"
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   priority
+                  withRing={false}
+                  withHover={false}
                 />
-                <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/70 via-slate-900/30 to-transparent" />
                 <motion.div
                   className="glass-panel relative h-full rounded-3xl p-6"
                   animate={{ y: [0, -10, 0] }}
@@ -402,35 +404,33 @@ export default function HomePage() {
           {showcases.map((item) => (
             <motion.div
               key={item.name}
-              className="group relative overflow-hidden rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft transition hover:-translate-y-1 hover:shadow-xl"
+              className="relative h-[320px]"
               variants={fadeUp}
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: 'spring', stiffness: 180, damping: 18 }}
             >
-              <Image
+              <ImageReveal
                 src={item.image}
                 alt={`${item.name} conference highlight`}
-                fill
-                className="object-cover"
+                className="h-full border border-white/70 shadow-soft"
+                overlayClassName="bg-gradient-to-t from-slate-950/80 via-slate-900/30 to-transparent"
                 sizes="(max-width: 1024px) 100vw, 33vw"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/30 to-transparent" />
-              <div
-                className={`absolute inset-0 bg-gradient-to-br ${item.tone} opacity-0 transition duration-500 group-hover:opacity-100`}
-              />
-              <div className="relative">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
-                  {item.location}
-                </p>
-                <h3 className="mt-3 text-xl font-semibold text-white">
-                  {item.name}
-                </h3>
-                <p className="mt-2 text-sm text-white/80">{item.detail}</p>
-                <div className="mt-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
-                  View case
-                  <ArrowUpRight className="h-3 w-3" />
+              >
+                <div className="absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${item.tone}`} />
                 </div>
-              </div>
+                <div className="relative flex h-full flex-col justify-end p-6">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+                    {item.location}
+                  </p>
+                  <h3 className="mt-3 text-xl font-semibold text-white">
+                    {item.name}
+                  </h3>
+                  <p className="mt-2 text-sm text-white/80">{item.detail}</p>
+                  <div className="mt-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+                    View case
+                    <ArrowUpRight className="h-3 w-3" />
+                  </div>
+                </div>
+              </ImageReveal>
             </motion.div>
           ))}
         </motion.div>
@@ -485,28 +485,30 @@ export default function HomePage() {
           {momentGallery.map((moment) => (
             <motion.div
               key={moment.title}
-              className="relative h-[320px] overflow-hidden rounded-[32px] border border-white/70 shadow-soft"
+              className="relative h-[320px]"
               variants={fadeUp}
             >
-              <Image
+              <ImageReveal
                 src={moment.image}
                 alt={moment.title}
-                fill
-                className="object-cover"
+                className="h-full border border-white/70 shadow-soft"
+                overlayClassName="bg-gradient-to-t from-slate-950/80 via-slate-900/20 to-transparent"
                 sizes="(max-width: 1024px) 100vw, 50vw"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/20 to-transparent" />
-              <div className="relative flex h-full items-end p-6">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
-                    Experience moment
-                  </p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">
-                    {moment.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-white/80">{moment.detail}</p>
+              >
+                <div className="flex h-full items-end p-6">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+                      Experience moment
+                    </p>
+                    <h3 className="mt-2 text-xl font-semibold text-white">
+                      {moment.title}
+                    </h3>
+                    <p className="mt-2 text-sm text-white/80">
+                      {moment.detail}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </ImageReveal>
             </motion.div>
           ))}
         </motion.div>
