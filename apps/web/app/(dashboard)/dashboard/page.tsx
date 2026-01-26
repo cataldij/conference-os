@@ -40,12 +40,32 @@ async function getDashboardData() {
 
   const conferenceIds = conferences?.map((c) => c.id) || []
 
+  // Handle empty conference case
+  if (conferenceIds.length === 0) {
+    return {
+      conferences: [],
+      totalConferences: 0,
+      totalAttendees: 0,
+      totalSessions: 0,
+      totalTickets: 0,
+      totalMessages: 0,
+    }
+  }
+
+  // Get chat room IDs for message count query
+  const { data: chatRooms } = await supabase
+    .from('chat_rooms')
+    .select('id')
+    .in('conference_id', conferenceIds)
+
+  const chatRoomIds = chatRooms?.map((r) => r.id) || []
+
   // Get stats
   const [
     { count: totalAttendees },
     { count: totalSessions },
     { count: totalTickets },
-    { count: totalMessages },
+    messagesResult,
   ] = await Promise.all([
     supabase
       .from('conference_members')
@@ -60,17 +80,15 @@ async function getDashboardData() {
       .select('*', { count: 'exact', head: true })
       .in('conference_id', conferenceIds)
       .not('ticket_code', 'is', null),
-    supabase
-      .from('messages')
-      .select('*', { count: 'exact', head: true })
-      .in(
-        'room_id',
-        supabase
-          .from('chat_rooms')
-          .select('id')
-          .in('conference_id', conferenceIds)
-      ),
+    chatRoomIds.length > 0
+      ? supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .in('room_id', chatRoomIds)
+      : Promise.resolve({ count: 0 }),
   ])
+
+  const totalMessages = messagesResult.count || 0
 
   return {
     conferences: conferences || [],
@@ -78,7 +96,7 @@ async function getDashboardData() {
     totalAttendees: totalAttendees || 0,
     totalSessions: totalSessions || 0,
     totalTickets: totalTickets || 0,
-    totalMessages: totalMessages || 0,
+    totalMessages,
   }
 }
 
