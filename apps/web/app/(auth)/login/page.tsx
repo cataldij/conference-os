@@ -41,12 +41,19 @@ export default function LoginPage() {
   })
 
   const onSubmit = async (data: LoginForm) => {
+    console.log('Login attempt:', data.email)
     setIsLoading(true)
     try {
-      await signIn(data)
+      const result = await signIn(data)
+      console.log('Login success:', result)
+      toast({
+        title: 'Success',
+        description: 'Logged in! Redirecting...',
+      })
       router.push('/dashboard')
       router.refresh()
     } catch (error: any) {
+      console.error('Login error:', error)
       toast({
         title: 'Error',
         description: error.message || 'Failed to sign in',
