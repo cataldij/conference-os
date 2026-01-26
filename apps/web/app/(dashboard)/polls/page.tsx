@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 // TODO: Fix Supabase type inference issues
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -289,7 +289,7 @@ export default async function PollsPage() {
                         <p className="mt-1 font-semibold">{poll.question}</p>
                         <p className="mt-2 text-xs text-muted-foreground">
                           {Array.isArray(poll.options)
-                            ? poll.options.join(' � ')
+                            ? poll.options.join(' • ')
                             : ''}
                         </p>
                       </div>
@@ -345,3 +345,4 @@ export default async function PollsPage() {
     </div>
   )
 }
+

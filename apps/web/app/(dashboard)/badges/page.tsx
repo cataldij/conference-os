@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 // TODO: Fix Supabase type inference issues
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -234,7 +234,7 @@ export default async function BadgesPage({
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {member.user?.job_title || 'Participant'}
-                  {member.user?.company ? ` � ${member.user.company}` : ''}
+                  {member.user?.company ? ` · ${member.user.company}` : ''}
                 </div>
               </div>
               <div className="mt-6 grid gap-2 text-xs text-muted-foreground">
@@ -253,3 +253,4 @@ export default async function BadgesPage({
     </div>
   )
 }
+
