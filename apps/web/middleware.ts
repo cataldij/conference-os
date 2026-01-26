@@ -120,6 +120,21 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // Rewrite /dashboard/* routes to match the app route group paths (e.g. /attendees)
+  if (req.nextUrl.pathname.startsWith('/dashboard/')) {
+    const rewriteUrl = req.nextUrl.clone()
+    rewriteUrl.pathname = req.nextUrl.pathname.replace(/^\/dashboard/, '')
+    const rewriteRes = NextResponse.rewrite(rewriteUrl, {
+      request: {
+        headers: req.headers,
+      },
+    })
+
+    // Preserve any auth cookies set earlier in the middleware
+    res.cookies.getAll().forEach((cookie) => rewriteRes.cookies.set(cookie))
+    res = rewriteRes
+  }
+
   // Add comprehensive security headers
   res.headers.set('X-Frame-Options', 'DENY')
   res.headers.set('X-Content-Type-Options', 'nosniff')
