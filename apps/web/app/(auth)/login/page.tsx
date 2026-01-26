@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -28,7 +27,6 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
-  const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -50,8 +48,8 @@ export default function LoginPage() {
         title: 'Success',
         description: 'Logged in! Redirecting...',
       })
-      router.push('/dashboard')
-      router.refresh()
+      // Use hard redirect to ensure middleware picks up the new session
+      window.location.href = '/dashboard'
     } catch (error: any) {
       console.error('Login error:', error)
       toast({

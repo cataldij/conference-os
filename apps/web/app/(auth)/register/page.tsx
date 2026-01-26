@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -33,7 +32,6 @@ const registerSchema = z.object({
 type RegisterForm = z.infer<typeof registerSchema>
 
 export default function RegisterPage() {
-  const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -57,8 +55,8 @@ export default function RegisterPage() {
         title: 'Account created!',
         description: 'Redirecting to dashboard...',
       })
-      router.push('/dashboard')
-      router.refresh()
+      // Use hard redirect to ensure middleware picks up the new session
+      window.location.href = '/dashboard'
     } catch (error: any) {
       toast({
         title: 'Error',
