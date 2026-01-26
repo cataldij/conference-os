@@ -55,9 +55,10 @@ export default function RegisterPage() {
       })
       toast({
         title: 'Account created!',
-        description: 'Please check your email to verify your account.',
+        description: 'Redirecting to dashboard...',
       })
-      router.push('/login')
+      router.push('/dashboard')
+      router.refresh()
     } catch (error: any) {
       toast({
         title: 'Error',
