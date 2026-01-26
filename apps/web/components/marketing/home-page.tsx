@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { motion } from 'framer-motion'
@@ -26,24 +27,39 @@ const stats = [
   { label: 'Countries', value: '38' },
 ]
 
+const partners = [
+  'Northwind Live',
+  'Summitworks',
+  'Aurora Forum',
+  'Atlas Collective',
+  'Studio Meridian',
+  'Kinetic Labs',
+]
+
 const showcases = [
   {
     name: 'Signal Summit',
     location: 'New York',
     detail: 'Hybrid keynote with 42 sessions',
     tone: 'from-sky-500/80 to-indigo-500/80',
+    image:
+      'https://images.pexels.com/photos/29708277/pexels-photo-29708277.jpeg?cs=srgb&dl=pexels-bertellifotografia-29708277.jpg&fm=jpg',
   },
   {
     name: 'Nova Product Week',
     location: 'Berlin',
     detail: 'Sponsor experience redesign',
     tone: 'from-amber-400/80 to-rose-500/80',
+    image:
+      'https://images.pexels.com/photos/29708259/pexels-photo-29708259.jpeg?cs=srgb&dl=pexels-bertellifotografia-29708259.jpg&fm=jpg',
   },
   {
     name: 'Atlas Builders Live',
     location: 'San Francisco',
     detail: '150 speakers across 12 stages',
     tone: 'from-emerald-400/80 to-teal-500/80',
+    image:
+      'https://images.pexels.com/photos/27945914/pexels-photo-27945914.jpeg?cs=srgb&dl=pexels-diva-plavalaguna-27945914.jpg&fm=jpg',
   },
 ]
 
@@ -97,6 +113,24 @@ const testimonials = [
       'Our sponsors finally had a premium digital booth and a real story to tell.',
     name: 'Javier Moreno',
     role: 'Director of Growth, Atlas',
+  },
+]
+
+const heroBackdrop =
+  'https://images.pexels.com/photos/29708258/pexels-photo-29708258.jpeg?cs=srgb&dl=pexels-bertellifotografia-29708258.jpg&fm=jpg'
+
+const momentGallery = [
+  {
+    title: 'Immersive check-in',
+    detail: 'Fast lanes, badge printing, and on-site support.',
+    image:
+      'https://images.pexels.com/photos/7861763/pexels-photo-7861763.jpeg?cs=srgb&dl=pexels-david-oreilly-7861763.jpg&fm=jpg',
+  },
+  {
+    title: 'Networking lounges',
+    detail: 'Curated meetups with smart matchmaking.',
+    image:
+      'https://images.pexels.com/photos/6340567/pexels-photo-6340567.jpeg?cs=srgb&dl=pexels-rdne-6340567.jpg&fm=jpg',
   },
 ]
 
@@ -172,9 +206,18 @@ export default function HomePage() {
           </div>
         </header>
 
-        <section className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-16 pt-4 lg:px-8 lg:pb-28">
+        <section className="relative z-10 mx-auto flex min-h-[90vh] w-full max-w-6xl flex-col justify-center px-6 pb-16 pt-4 lg:px-8 lg:pb-24 lg:pt-10">
+          <div className="pointer-events-none absolute -left-24 top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle,_rgba(59,130,246,0.45),_transparent_70%)] blur-3xl animate-drift" />
+          <div
+            className="pointer-events-none absolute -right-20 top-24 h-80 w-80 rounded-full bg-[radial-gradient(circle,_rgba(245,158,11,0.35),_transparent_70%)] blur-3xl animate-drift"
+            style={{ animationDelay: '4s' }}
+          />
+          <div
+            className="pointer-events-none absolute bottom-10 left-1/3 h-64 w-64 rounded-full bg-[radial-gradient(circle,_rgba(20,184,166,0.35),_transparent_70%)] blur-3xl animate-pulse-glow"
+            style={{ animationDelay: '1.5s' }}
+          />
           <motion.div
-            className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr]"
+            className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]"
             variants={stagger}
             initial="hidden"
             animate="show"
@@ -185,9 +228,10 @@ export default function HomePage() {
                 Product studio meets command center
               </div>
               <div className="space-y-4">
-                <h1 className="font-display text-4xl font-semibold leading-tight text-slate-900 md:text-6xl">
-                  Build conferences that feel{' '}
-                  <span className="text-gradient">unforgettable</span>.
+                <h1 className="font-display text-4xl font-semibold leading-[1.05] text-slate-900 md:text-6xl">
+                  Open with a{' '}
+                  <span className="text-gradient">wow</span>. Deliver with
+                  precision.
                 </h1>
                 <p className="text-base text-slate-600 md:text-lg">
                   Conference OS blends creative storytelling, live operations,
@@ -220,73 +264,108 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
+              <div className="relative mt-8 overflow-hidden rounded-full border border-white/70 bg-white/70 py-2">
+                <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-white via-white/70 to-transparent" />
+                <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-white via-white/70 to-transparent" />
+                <div className="flex w-[200%] animate-[marquee_18s_linear_infinite] items-center gap-10 px-6 text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">
+                  {partners.concat(partners).map((partner, index) => (
+                    <span key={`${partner}-${index}`}>{partner}</span>
+                  ))}
+                </div>
+              </div>
             </motion.div>
 
-            <motion.div className="space-y-6" variants={fadeUp}>
-              <div className="glass-panel rounded-3xl p-6 shadow-soft">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Studio schedule
-                  </p>
-                  <span className="text-xs font-semibold text-emerald-600">
-                    Live
-                  </span>
-                </div>
-                <div className="mt-4 space-y-3">
-                  {['Experience design', 'Speaker ops', 'Sponsor suite'].map(
-                    (item) => (
-                      <div
-                        key={item}
-                        className="flex items-center justify-between rounded-2xl border border-white/70 bg-white/80 px-4 py-3"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                          <p className="text-sm font-semibold text-slate-900">
-                            {item}
-                          </p>
-                        </div>
-                        <p className="text-xs text-slate-500">In progress</p>
+            <motion.div className="relative" variants={fadeUp}>
+              <div className="absolute -right-10 top-6 hidden h-28 w-28 rounded-full border border-white/70 lg:block" />
+              <div className="relative h-[440px] overflow-hidden rounded-[32px] border border-white/70 bg-white/40 p-6 shadow-soft backdrop-blur-xl">
+                <Image
+                  src={heroBackdrop}
+                  alt="Conference keynote with spotlight and large screen"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/70 via-slate-900/30 to-transparent" />
+                <motion.div
+                  className="glass-panel relative h-full rounded-3xl p-6"
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                      Live command
+                    </p>
+                    <span className="text-xs font-semibold text-emerald-600">
+                      Syncing
+                    </span>
+                  </div>
+                  <div className="mt-6 space-y-4">
+                    <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
+                      <p className="text-sm font-semibold text-slate-900">
+                        Main stage keynote
+                      </p>
+                      <p className="mt-2 text-xs text-slate-500">
+                        3:00 PM - 4:00 PM, Hall A
+                      </p>
+                      <div className="mt-3 h-1.5 w-full rounded-full bg-slate-200/80">
+                        <div className="h-1.5 w-[78%] rounded-full bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500" />
                       </div>
-                    )
-                  )}
-                </div>
-              </div>
-              <div className="glass-panel rounded-3xl p-6 shadow-soft">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Immersive agenda
-                  </p>
-                  <Sparkles className="h-5 w-5 text-slate-500" />
-                </div>
-                <div className="mt-4 space-y-4">
-                  <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
-                    <p className="text-sm font-semibold text-slate-900">
-                      Keynote: The Future of Experience
-                    </p>
-                    <p className="mt-2 text-xs text-slate-500">
-                      2:00 PM - 3:00 PM, Main Theater
-                    </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
+                      <p className="text-sm font-semibold text-slate-900">
+                        Sponsor lounge
+                      </p>
+                      <p className="mt-2 text-xs text-slate-500">
+                        120 VIPs checked in
+                      </p>
+                      <div className="mt-3 h-1.5 w-full rounded-full bg-slate-200/80">
+                        <div className="h-1.5 w-[64%] rounded-full bg-gradient-to-r from-amber-500 via-orange-400 to-rose-400" />
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
+                      <p className="text-sm font-semibold text-slate-900">
+                        Streaming uplink
+                      </p>
+                      <p className="mt-2 text-xs text-slate-500">
+                        Low latency, 14 locations
+                      </p>
+                      <div className="mt-3 h-1.5 w-full rounded-full bg-slate-200/80">
+                        <div className="h-1.5 w-[88%] rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-sky-400" />
+                      </div>
+                    </div>
                   </div>
-                  <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
-                    <p className="text-sm font-semibold text-slate-900">
-                      AI Workshops and Labs
-                    </p>
-                    <p className="mt-2 text-xs text-slate-500">
-                      3:15 PM - 5:30 PM, Studio B
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between rounded-3xl border border-white/70 bg-white/80 px-6 py-4 shadow-soft">
-                <div>
+                </motion.div>
+
+                <motion.div
+                  className="absolute -left-8 -top-10 hidden w-52 rounded-3xl border border-white/70 bg-white/80 p-4 shadow-soft lg:block"
+                  animate={{ y: [0, 12, 0] }}
+                  transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+                >
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Next sprint
+                    Brand layer
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">
-                    Sponsor activations review
+                  <p className="mt-3 text-sm font-semibold text-slate-900">
+                    4 new moments shipped
                   </p>
-                </div>
-                <ArrowUpRight className="h-4 w-4 text-slate-500" />
+                  <p className="mt-2 text-xs text-slate-500">
+                    Agenda, stage, and app visuals updated.
+                  </p>
+                </motion.div>
+
+                <motion.div
+                  className="absolute -bottom-8 right-6 hidden w-56 rounded-3xl border border-white/70 bg-white/80 p-4 shadow-soft lg:block"
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    Experience score
+                  </p>
+                  <p className="mt-3 text-2xl font-semibold text-slate-900">
+                    92
+                  </p>
+                  <p className="mt-2 text-xs text-emerald-600">+12 uplift</p>
+                </motion.div>
               </div>
             </motion.div>
           </motion.div>
@@ -328,18 +407,26 @@ export default function HomePage() {
               whileHover={{ scale: 1.02 }}
               transition={{ type: 'spring', stiffness: 180, damping: 18 }}
             >
+              <Image
+                src={item.image}
+                alt={`${item.name} conference highlight`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 33vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/30 to-transparent" />
               <div
                 className={`absolute inset-0 bg-gradient-to-br ${item.tone} opacity-0 transition duration-500 group-hover:opacity-100`}
               />
               <div className="relative">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
                   {item.location}
                 </p>
-                <h3 className="mt-3 text-xl font-semibold text-slate-900">
+                <h3 className="mt-3 text-xl font-semibold text-white">
                   {item.name}
                 </h3>
-                <p className="mt-2 text-sm text-slate-600">{item.detail}</p>
-                <div className="mt-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                <p className="mt-2 text-sm text-white/80">{item.detail}</p>
+                <div className="mt-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
                   View case
                   <ArrowUpRight className="h-3 w-3" />
                 </div>
@@ -385,6 +472,44 @@ export default function HomePage() {
             </motion.div>
           ))}
         </div>
+      </motion.section>
+
+      <motion.section
+        className="mx-auto w-full max-w-6xl px-6 py-20 lg:px-8"
+        variants={stagger}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.2 }}
+      >
+        <motion.div className="grid gap-6 lg:grid-cols-2" variants={stagger}>
+          {momentGallery.map((moment) => (
+            <motion.div
+              key={moment.title}
+              className="relative h-[320px] overflow-hidden rounded-[32px] border border-white/70 shadow-soft"
+              variants={fadeUp}
+            >
+              <Image
+                src={moment.image}
+                alt={moment.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/20 to-transparent" />
+              <div className="relative flex h-full items-end p-6">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+                    Experience moment
+                  </p>
+                  <h3 className="mt-2 text-xl font-semibold text-white">
+                    {moment.title}
+                  </h3>
+                  <p className="mt-2 text-sm text-white/80">{moment.detail}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
       </motion.section>
 
       <motion.section
@@ -522,7 +647,7 @@ export default function HomePage() {
                 Ready to build?
               </p>
               <h2 className="font-display mt-3 text-3xl text-slate-900 md:text-4xl">
-                Let’s orchestrate your next flagship event.
+                Let's orchestrate your next flagship event.
               </h2>
             </div>
             <div className="flex flex-wrap gap-4">
@@ -547,7 +672,7 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-6">
             <span>hello@conferenceos.com</span>
-            <span>New York · Berlin · SF</span>
+            <span>New York - Berlin - SF</span>
           </div>
         </div>
       </footer>

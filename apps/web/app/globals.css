@@ -182,6 +182,14 @@
   .animate-rise {
     animation: rise 0.8s ease-out both;
   }
+
+  .animate-drift {
+    animation: drift 16s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 6s ease-in-out infinite;
+  }
 }
 
 @keyframes float {
@@ -211,5 +219,36 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(24px, -28px, 0) scale(1.05);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
   }
 }
