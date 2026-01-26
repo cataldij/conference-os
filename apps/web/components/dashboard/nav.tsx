@@ -14,6 +14,8 @@ import {
   Ticket,
   MessageSquare,
   Bell,
+  ListChecks,
+  BadgeCheck,
 } from 'lucide-react'
 
 const navigation = [
@@ -56,6 +58,16 @@ const navigation = [
     name: 'Notifications',
     href: '/dashboard/notifications',
     icon: Bell,
+  },
+  {
+    name: 'Live Polls',
+    href: '/dashboard/polls',
+    icon: ListChecks,
+  },
+  {
+    name: 'Badges',
+    href: '/dashboard/badges',
+    icon: BadgeCheck,
   },
   {
     name: 'Analytics',
