@@ -17,7 +17,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
-import { signUp } from '@conference-os/api'
+import { signUpBrowser } from '@/lib/supabase-browser'
 
 const registerSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -46,11 +46,7 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true)
     try {
-      await signUp({
-        email: data.email,
-        password: data.password,
-        fullName: data.fullName,
-      })
+      await signUpBrowser(data.email, data.password, data.fullName)
       toast({
         title: 'Account created!',
         description: 'Redirecting to dashboard...',

@@ -17,7 +17,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
-import { signIn } from '@conference-os/api'
+import { signInBrowser } from '@/lib/supabase-browser'
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -42,7 +42,7 @@ export default function LoginPage() {
     console.log('Login attempt:', data.email)
     setIsLoading(true)
     try {
-      const result = await signIn(data)
+      const result = await signInBrowser(data.email, data.password)
       console.log('Login success:', result)
       toast({
         title: 'Success',
