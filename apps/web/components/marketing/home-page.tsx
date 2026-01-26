@@ -170,7 +170,7 @@ export default function HomePage() {
         <div className="pointer-events-none absolute inset-0 cursor-glow" />
         <div className="pointer-events-none absolute inset-0 cursor-glow-amber" />
 
-        <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-8 lg:px-8">
+        <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-8 lg:px-8 2xl:max-w-[1400px]">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-amber-400 to-teal-400 text-white shadow-soft">
               <span className="text-lg font-bold">C</span>
@@ -206,7 +206,7 @@ export default function HomePage() {
           </div>
         </header>
 
-        <section className="relative z-10 mx-auto flex min-h-[90vh] w-full max-w-6xl flex-col justify-center px-6 pb-16 pt-4 lg:px-8 lg:pb-24 lg:pt-10">
+        <section className="relative z-10 mx-auto flex min-h-[90vh] w-full max-w-7xl flex-col justify-center px-6 pb-16 pt-4 lg:px-8 lg:pb-24 lg:pt-10 2xl:max-w-[1400px]">
           <div className="pointer-events-none absolute -left-24 top-12 h-72 w-72 rounded-full bg-[radial-gradient(circle,_rgba(59,130,246,0.45),_transparent_70%)] blur-3xl animate-drift" />
           <div
             className="pointer-events-none absolute -right-20 top-24 h-80 w-80 rounded-full bg-[radial-gradient(circle,_rgba(245,158,11,0.35),_transparent_70%)] blur-3xl animate-drift"
@@ -217,7 +217,7 @@ export default function HomePage() {
             style={{ animationDelay: '1.5s' }}
           />
           <motion.div
-            className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]"
+            className="grid items-center gap-12 lg:grid-cols-[1fr_1fr] lg:gap-16"
             variants={stagger}
             initial="hidden"
             animate="show"
