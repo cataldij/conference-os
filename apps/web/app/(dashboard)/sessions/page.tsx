@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Plus, Calendar, Clock, MapPin, Users, Edit, Trash2 } from 'lucide-react'
 
 async function getSessionsData() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const {
     data: { user },

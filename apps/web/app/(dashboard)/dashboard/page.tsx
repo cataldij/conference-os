@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 
 async function getDashboardData() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Get user's conferences
   const {

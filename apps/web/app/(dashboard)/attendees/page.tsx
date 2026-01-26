@@ -27,7 +27,7 @@ import {
 } from 'lucide-react'
 
 async function getAttendeesData() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const {
     data: { user },
