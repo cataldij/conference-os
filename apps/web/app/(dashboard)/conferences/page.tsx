@@ -36,15 +36,18 @@ async function getConferencesData() {
   }
 
   // Get conferences where user is organizer
-  const { data: conferences } = await supabase
+  const { data: conferences, error } = await supabase
     .from('conferences')
     .select(`
       *,
-      members:conference_members(count),
-      sessions:sessions(count)
+      members:conference_members(count)
     `)
     .eq('created_by', user.id)
     .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching conferences:', error)
+  }
 
   return {
     conferences: conferences || [],
@@ -266,7 +269,7 @@ function ConferenceCard({
 
           <div className="flex items-center justify-between pt-2 border-t">
             <div className="text-xs text-muted-foreground">
-              {conference.sessions?.[0]?.count || 0} sessions
+              {conference.registration_open ? 'Registration open' : 'Registration closed'}
             </div>
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" asChild>
