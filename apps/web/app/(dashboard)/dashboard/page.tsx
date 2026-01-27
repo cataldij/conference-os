@@ -1,5 +1,6 @@
 // @ts-nocheck
 // TODO: Fix Supabase type inference issues
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { formatNumber } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -209,14 +210,15 @@ export default async function DashboardPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button className="rounded-full bg-slate-900 px-5 text-white shadow-soft hover:bg-slate-800">
-                Create conference
+              <Button asChild className="rounded-full bg-slate-900 px-5 text-white shadow-soft hover:bg-slate-800">
+                <Link href="/dashboard/conferences/new">Create conference</Link>
               </Button>
               <Button
                 variant="outline"
+                asChild
                 className="rounded-full border-white/70 bg-white/80 px-5 text-slate-700 shadow-soft hover:bg-white"
               >
-                Invite team
+                <Link href="/dashboard/attendees/invite">Invite team</Link>
               </Button>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -469,7 +471,7 @@ export default async function DashboardPage() {
               <TrendingUp className="h-5 w-5 text-slate-500" />
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <button className="group flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/80 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-soft">
+              <Link href="/dashboard/conferences/new" className="group flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/80 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-soft">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white">
                   <Calendar className="h-5 w-5" />
                 </div>
@@ -479,8 +481,8 @@ export default async function DashboardPage() {
                 <p className="text-xs text-slate-500">
                   Build the next event in minutes.
                 </p>
-              </button>
-              <button className="group flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/80 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-soft">
+              </Link>
+              <Link href="/dashboard/sponsors" className="group flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/80 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-soft">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 text-white">
                   <Building2 className="h-5 w-5" />
                 </div>
@@ -490,8 +492,8 @@ export default async function DashboardPage() {
                 <p className="text-xs text-slate-500">
                   Launch a premium booth experience.
                 </p>
-              </button>
-              <button className="group flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/80 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-soft">
+              </Link>
+              <Link href="/dashboard/analytics" className="group flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/80 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-soft">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white">
                   <TrendingUp className="h-5 w-5" />
                 </div>
@@ -501,8 +503,8 @@ export default async function DashboardPage() {
                 <p className="text-xs text-slate-500">
                   Track engagement in real time.
                 </p>
-              </button>
-              <button className="group flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/80 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-soft">
+              </Link>
+              <Link href="/dashboard/check-in" className="group flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/80 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-soft">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500 text-white">
                   <Zap className="h-5 w-5" />
                 </div>
@@ -512,7 +514,7 @@ export default async function DashboardPage() {
                 <p className="text-xs text-slate-500">
                   Start scanning attendees now.
                 </p>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
