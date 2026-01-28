@@ -386,7 +386,7 @@ export async function reorderSections(
   );
 
   const results = await Promise.all(updates);
-  return results.every((r) => !r.error);
+  return results.every((r: any) => !r.error);
 }
 
 function mapPageSection(data: any): PageSection {
