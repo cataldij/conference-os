@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar, Users, MapPin, Trash2, Palette, Eye, ExternalLink } from 'lucide-react'
+import { Calendar, Users, MapPin, Trash2, Palette, Eye, ExternalLink, Sparkles } from 'lucide-react'
 
 async function getConference(id: string) {
   const supabase = await createClient()
@@ -118,10 +118,16 @@ export default async function ConferenceDetailPage({
               Preview
             </Link>
           </Button>
-          <Button asChild>
+          <Button asChild className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+            <Link href={`/dashboard/conferences/${conference.id}/design`}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Design Studio
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
             <Link href={`/dashboard/conferences/${conference.id}/settings`}>
               <Palette className="mr-2 h-4 w-4" />
-              Customize
+              Settings
             </Link>
           </Button>
           <Button variant="outline" asChild>

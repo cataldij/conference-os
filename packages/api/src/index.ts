@@ -55,8 +55,114 @@ export {
   getConferenceRooms,
   createConference,
   conferenceSchema,
+  // AI Recommendations
+  getSessionRecommendations,
+  trackSessionInteraction,
+  updateUserInterests,
 } from './conferences'
-export type { ConferenceInput, ConferenceWithDetails } from './conferences'
+export type { ConferenceInput, ConferenceWithDetails, SessionRecommendation } from './conferences'
+
+// Networking
+export {
+  getConferenceAttendees,
+  getUserConnections,
+  getPendingConnectionRequests,
+  sendConnectionRequest,
+  respondToConnectionRequest,
+  removeConnection,
+  getConnectionStats,
+} from './networking'
+export type { AttendeeProfile, ConnectionWithProfile } from './networking'
+
+// Messaging
+export {
+  getOrCreateDirectChat,
+  getUserChatRooms,
+  getRoomMessages,
+  sendMessage,
+  markRoomAsRead,
+  subscribeToRoomMessages,
+  subscribeToUserChats,
+  getChatRoom,
+} from './messaging'
+export type { ChatRoom, ChatRoomWithDetails, MessageWithSender } from './messaging'
+
+// AI Conference Builder
+export {
+  generateConferenceDetails,
+  generateTracks,
+  generateSessions,
+  generateSessionDescription,
+  generateSpeakerBio,
+  generateSchedule,
+  generateMarketingCopy,
+  chatWithAssistant,
+  streamChatWithAssistant,
+} from './ai-builder'
+export type {
+  AIGenerationType,
+  ConferenceDetailsResponse,
+  TrackSuggestion,
+  TracksResponse,
+  SessionSuggestion,
+  SessionsResponse,
+  SessionDescriptionResponse,
+  SpeakerBioResponse,
+  ScheduleResponse,
+  MarketingCopyResponse,
+  ChatMessage,
+  AIGenerationResult,
+  ConferenceDetailsContext,
+  TracksContext,
+  SessionsContext,
+  SessionDescriptionContext,
+  SpeakerBioContext,
+  ScheduleContext,
+  MarketingCopyContext,
+} from './ai-builder'
+
+// Design System
+export {
+  tokensToCSSVariables,
+  tokensToCSS,
+  getDesignTokens,
+  getDesignTokensHistory,
+  saveDesignTokens,
+  revertToVersion,
+  getSystemVariants,
+  getConferenceVariants,
+  createCustomVariant,
+  getPageSections,
+  savePageSections,
+  reorderSections,
+  getDesignPresets,
+  getFeaturedPresets,
+  applyPreset,
+  generateStyles,
+  saveAIGeneration,
+  rateAIGeneration,
+} from './design-system'
+export type {
+  DesignTokens,
+  ColorTokens,
+  TypographyTokens,
+  SpacingTokens,
+  BorderRadiusTokens,
+  ShadowTokens,
+  AnimationTokens,
+  ComponentType,
+  ComponentVariant,
+  ComponentConfig,
+  PageType,
+  SectionType,
+  PageSection,
+  DesignPreset,
+  AIStylePrompt,
+  AIStyleGeneration,
+  DesignTokensRecord,
+  CSSVariables,
+} from './design-system'
+export { DEFAULT_TOKENS } from './design-system/types'
 
 // Database types
 export type { Json } from './database.types'
