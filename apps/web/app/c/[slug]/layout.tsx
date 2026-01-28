@@ -22,8 +22,30 @@ async function getConference(slug: string) {
   return conference
 }
 
+// Background pattern CSS
+const PATTERN_CSS: Record<string, { css: string; size: string }> = {
+  dots: {
+    css: 'radial-gradient(circle, var(--pattern-color) 1px, transparent 1px)',
+    size: '20px 20px',
+  },
+  grid: {
+    css: 'linear-gradient(var(--pattern-color) 1px, transparent 1px), linear-gradient(to right, var(--pattern-color) 1px, transparent 1px)',
+    size: '20px 20px',
+  },
+  diagonal: {
+    css: 'repeating-linear-gradient(45deg, var(--pattern-color), var(--pattern-color) 1px, transparent 1px, transparent 10px)',
+    size: '14px 14px',
+  },
+  zigzag: {
+    css: 'linear-gradient(135deg, var(--pattern-color) 25%, transparent 25%), linear-gradient(225deg, var(--pattern-color) 25%, transparent 25%), linear-gradient(45deg, var(--pattern-color) 25%, transparent 25%), linear-gradient(315deg, var(--pattern-color) 25%, transparent 25%)',
+    size: '20px 20px',
+  },
+}
+
 // Generate CSS variables from conference settings
 function generateThemeCSS(conference: any) {
+  const patternColor = conference.background_pattern_color || '#00000010'
+
   return `
     :root {
       --conference-primary: ${conference.primary_color || '#2563eb'};
@@ -36,8 +58,41 @@ function generateThemeCSS(conference: any) {
       --conference-nav-text: ${conference.nav_text_color || '#374151'};
       --conference-button: ${conference.button_color || conference.primary_color || '#2563eb'};
       --conference-button-text: ${conference.button_text_color || '#ffffff'};
+      --pattern-color: ${patternColor};
     }
   `
+}
+
+// Generate background styles from conference settings
+function getBackgroundStyles(conference: any) {
+  // Custom image background
+  if (conference.background_image_url) {
+    return {
+      backgroundImage: `url(${conference.background_image_url})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
+    }
+  }
+
+  // Pattern background
+  if (conference.background_pattern && PATTERN_CSS[conference.background_pattern]) {
+    const pattern = PATTERN_CSS[conference.background_pattern]
+    return {
+      backgroundImage: pattern.css,
+      backgroundSize: pattern.size,
+    }
+  }
+
+  // Gradient background
+  if (conference.background_gradient_start && conference.background_gradient_end) {
+    return {
+      backgroundImage: `linear-gradient(135deg, ${conference.background_gradient_start}, ${conference.background_gradient_end})`,
+      backgroundAttachment: 'fixed',
+    }
+  }
+
+  return {}
 }
 
 // Get hero height in pixels
@@ -94,6 +149,9 @@ export default async function PublicConferenceLayout({
   // Check feature flags
   const showAttendees = conference.feature_attendee_directory !== false
 
+  // Get background styles
+  const backgroundStyles = getBackgroundStyles(conference)
+
   return (
     <>
       {/* Inject theme CSS */}
@@ -105,16 +163,26 @@ export default async function PublicConferenceLayout({
       )}
 
       <div
-        className="min-h-screen"
+        className="min-h-screen relative"
         style={{
           backgroundColor: conference.background_color || '#ffffff',
           color: conference.text_color || '#1f2937',
           fontFamily: conference.font_body ? `"${conference.font_body}", sans-serif` : undefined,
+          ...backgroundStyles,
         }}
       >
+        {/* Overlay for background images to ensure readability */}
+        {conference.background_image_url && (
+          <div
+            className="fixed inset-0 pointer-events-none z-0"
+            style={{
+              backgroundColor: `rgba(255, 255, 255, ${conference.background_image_overlay || 0.5})`,
+            }}
+          />
+        )}
         {/* Hero Banner */}
         <div
-          className={`relative ${heroHeight}`}
+          className={`relative ${heroHeight} z-10`}
           style={{
             backgroundColor: conference.primary_color || '#2563eb',
             backgroundImage: conference.background_gradient_start && conference.background_gradient_end
@@ -264,11 +332,11 @@ export default async function PublicConferenceLayout({
         </nav>
 
         {/* Content */}
-        <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+        <main className="relative z-10 mx-auto max-w-5xl px-4 py-8">{children}</main>
 
         {/* Footer */}
         <footer
-          className="border-t py-8"
+          className="relative z-10 border-t py-8"
           style={{ backgroundColor: conference.background_color || '#f8fafc' }}
         >
           <div className="mx-auto max-w-5xl px-4">

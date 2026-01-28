@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { ImageUpload } from '@/components/ui/image-upload'
+import { BackgroundPicker } from '@/components/conference/background-picker'
 import {
   ArrowLeft,
   Loader2,
@@ -21,6 +23,7 @@ import {
   Smartphone,
   Eye,
   CheckCircle,
+  ImageIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -359,39 +362,91 @@ export default function ConferenceSettingsPage({
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Logo URL</label>
-                  <Input
-                    value={conference.logo_url || ''}
-                    onChange={(e) => updateField('logo_url', e.target.value)}
-                    placeholder="https://..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Banner/Hero Image URL</label>
-                  <Input
-                    value={conference.banner_url || ''}
-                    onChange={(e) => updateField('banner_url', e.target.value)}
-                    placeholder="https://..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Favicon URL</label>
-                  <Input
-                    value={conference.favicon_url || ''}
-                    onChange={(e) => updateField('favicon_url', e.target.value)}
-                    placeholder="https://..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Social Share Image URL</label>
-                  <Input
-                    value={conference.og_image_url || ''}
-                    onChange={(e) => updateField('og_image_url', e.target.value)}
-                    placeholder="https://..."
-                  />
-                </div>
+                <ImageUpload
+                  label="Logo"
+                  value={conference.logo_url || null}
+                  onChange={(url) => updateField('logo_url', url)}
+                  bucket="conference-assets"
+                  folder={conference.id}
+                  aspectRatio="logo"
+                  maxSizeMB={5}
+                />
+                <ImageUpload
+                  label="Banner / Hero Image"
+                  value={conference.banner_url || null}
+                  onChange={(url) => updateField('banner_url', url)}
+                  bucket="conference-assets"
+                  folder={conference.id}
+                  aspectRatio="banner"
+                  maxSizeMB={10}
+                />
+                <ImageUpload
+                  label="Favicon"
+                  value={conference.favicon_url || null}
+                  onChange={(url) => updateField('favicon_url', url)}
+                  bucket="conference-assets"
+                  folder={conference.id}
+                  aspectRatio="square"
+                  maxSizeMB={1}
+                />
+                <ImageUpload
+                  label="Social Share Image (OG Image)"
+                  value={conference.og_image_url || null}
+                  onChange={(url) => updateField('og_image_url', url)}
+                  bucket="conference-assets"
+                  folder={conference.id}
+                  aspectRatio="video"
+                  maxSizeMB={5}
+                />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Backgrounds */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                Background
+              </CardTitle>
+              <CardDescription>
+                Add a custom background image, pattern, or gradient to your conference pages
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BackgroundPicker
+                backgroundUrl={conference.background_image_url || null}
+                backgroundPattern={conference.background_pattern || null}
+                gradientStart={conference.background_gradient_start || null}
+                gradientEnd={conference.background_gradient_end || null}
+                patternColor={conference.background_pattern_color || null}
+                onBackgroundUrlChange={(url) => {
+                  updateField('background_image_url', url)
+                  if (url) {
+                    updateField('background_pattern', null)
+                    updateField('background_gradient_start', null)
+                    updateField('background_gradient_end', null)
+                  }
+                }}
+                onPatternChange={(pattern) => {
+                  updateField('background_pattern', pattern)
+                  if (pattern) {
+                    updateField('background_image_url', null)
+                    updateField('background_gradient_start', null)
+                    updateField('background_gradient_end', null)
+                  }
+                }}
+                onGradientChange={(start, end) => {
+                  updateField('background_gradient_start', start)
+                  updateField('background_gradient_end', end)
+                  if (start) {
+                    updateField('background_image_url', null)
+                    updateField('background_pattern', null)
+                  }
+                }}
+                onPatternColorChange={(color) => updateField('background_pattern_color', color)}
+                conferenceId={conference.id}
+              />
             </CardContent>
           </Card>
 

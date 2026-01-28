@@ -1,21 +1,21 @@
 import { Tabs } from 'expo-router'
-import { useTheme } from '@tamagui/core'
+import { useTheme as useTamaguiTheme } from '@tamagui/core'
 import { Home, Calendar, Users, MessageCircle, User } from '@tamagui/lucide-icons'
 import { useConference } from '../../hooks/useConference'
 
 export default function TabsLayout() {
-  const theme = useTheme()
-  const { accentColor } = useConference()
+  const tamaguiTheme = useTamaguiTheme()
+  const { theme: conferenceTheme } = useConference()
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: accentColor,
-        tabBarInactiveTintColor: theme.colorSecondary?.val,
+        tabBarActiveTintColor: conferenceTheme.tabBarActiveColor,
+        tabBarInactiveTintColor: tamaguiTheme.colorSecondary?.val,
         tabBarStyle: {
-          backgroundColor: theme.background?.val,
-          borderTopColor: theme.borderColor?.val,
+          backgroundColor: conferenceTheme.tabBarColor,
+          borderTopColor: tamaguiTheme.borderColor?.val,
           borderTopWidth: 1,
           paddingTop: 8,
           paddingBottom: 8,

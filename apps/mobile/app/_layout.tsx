@@ -24,6 +24,34 @@ const queryClient = new QueryClient({
   },
 })
 
+// Inner component that can use the ConferenceProvider context
+function AppContent() {
+  const colorScheme = useColorScheme()
+
+  return (
+    <>
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: 'transparent' },
+          animation: 'slide_from_right',
+        }}
+      >
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="conference/[slug]"
+          options={{
+            headerShown: false,
+            presentation: 'card',
+          }}
+        />
+      </Stack>
+    </>
+  )
+}
+
 export default function RootLayout() {
   const colorScheme = useColorScheme()
 
@@ -51,24 +79,7 @@ export default function RootLayout() {
         <Theme name={colorScheme || 'light'}>
           <AuthProvider>
             <ConferenceProvider>
-              <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: 'transparent' },
-                  animation: 'slide_from_right',
-                }}
-              >
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="conference/[slug]"
-                  options={{
-                    headerShown: false,
-                    presentation: 'card',
-                  }}
-                />
-              </Stack>
+              <AppContent />
             </ConferenceProvider>
           </AuthProvider>
         </Theme>

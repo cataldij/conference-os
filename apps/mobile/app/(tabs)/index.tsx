@@ -27,12 +27,16 @@ import {
 } from '@tamagui/lucide-icons'
 import { useAuth } from '../../hooks/useAuth'
 import { useConference } from '../../hooks/useConference'
+import { ThemedBackground } from '../../components/ThemedBackground'
 import { getUserConferences, getSessionsByDate, getUserSavedSessions } from '@conference-os/api'
 
 export default function TodayScreen() {
   const insets = useSafeAreaInsets()
   const { user, profile } = useAuth()
-  const { activeConference, accentColor } = useConference()
+  const { activeConference, theme } = useConference()
+
+  // Use theme colors throughout
+  const accentColor = theme.primaryColor
 
   // Get user's conferences
   const { data: conferences, isLoading: conferencesLoading, refetch } = useQuery({
@@ -116,7 +120,7 @@ export default function TodayScreen() {
   ]
 
   return (
-    <YStack flex={1} backgroundColor="$background">
+    <ThemedBackground>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
@@ -388,6 +392,6 @@ export default function TodayScreen() {
           )}
         </YStack>
       </ScrollView>
-    </YStack>
+    </ThemedBackground>
   )
 }

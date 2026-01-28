@@ -11,6 +11,11 @@ ALTER TABLE conferences ADD COLUMN IF NOT EXISTS accent_color TEXT DEFAULT '#f59
 ALTER TABLE conferences ADD COLUMN IF NOT EXISTS background_color TEXT DEFAULT '#ffffff';
 ALTER TABLE conferences ADD COLUMN IF NOT EXISTS background_gradient_start TEXT;
 ALTER TABLE conferences ADD COLUMN IF NOT EXISTS background_gradient_end TEXT;
+ALTER TABLE conferences ADD COLUMN IF NOT EXISTS background_pattern TEXT; -- 'none', 'dots', 'grid', 'diagonal', 'waves', 'zigzag', 'hexagons', 'circuit', 'topography'
+ALTER TABLE conferences ADD COLUMN IF NOT EXISTS background_pattern_color TEXT DEFAULT '#00000010';
+ALTER TABLE conferences ADD COLUMN IF NOT EXISTS background_pattern_opacity DECIMAL(3,2) DEFAULT 0.1;
+ALTER TABLE conferences ADD COLUMN IF NOT EXISTS background_image_url TEXT; -- Custom uploaded background image
+ALTER TABLE conferences ADD COLUMN IF NOT EXISTS background_image_overlay DECIMAL(3,2) DEFAULT 0.5; -- Overlay opacity for readability
 ALTER TABLE conferences ADD COLUMN IF NOT EXISTS text_color TEXT DEFAULT '#1f2937';
 ALTER TABLE conferences ADD COLUMN IF NOT EXISTS heading_color TEXT DEFAULT '#111827';
 ALTER TABLE conferences ADD COLUMN IF NOT EXISTS nav_background_color TEXT DEFAULT '#ffffff';
