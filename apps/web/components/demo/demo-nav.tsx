@@ -17,6 +17,7 @@ import {
   ListChecks,
   BadgeCheck,
   Palette,
+  Rocket,
 } from 'lucide-react'
 import { useDemoMode } from '@/contexts/demo-mode-context'
 
@@ -27,10 +28,15 @@ const navigation = [
     icon: LayoutDashboard,
   },
   {
+    name: 'App Builder',
+    href: '/demo/builder',
+    icon: Rocket,
+    highlight: true,
+  },
+  {
     name: 'Design Studio',
     href: '/demo/design',
     icon: Palette,
-    highlight: true,
   },
   {
     name: 'Conferences',
