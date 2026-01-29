@@ -27,6 +27,35 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+// Comprehensive Google Fonts list
+const GOOGLE_FONTS = [
+  // Modern Sans-Serif
+  'Inter', 'Poppins', 'Space Grotesk', 'DM Sans', 'Outfit', 'Plus Jakarta Sans',
+  'Manrope', 'Satoshi', 'General Sans', 'Clash Display', 'Cabinet Grotesk',
+  'Syne', 'Unbounded', 'Bricolage Grotesque', 'Onest',
+  // Classic Sans-Serif
+  'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Raleway', 'Nunito', 'Source Sans 3',
+  'Work Sans', 'Rubik', 'Quicksand', 'Karla', 'Archivo', 'Figtree', 'Albert Sans',
+  // Display & Bold
+  'Bebas Neue', 'Oswald', 'Anton', 'Teko', 'Barlow Condensed', 'Fjalla One',
+  'Lexend', 'Red Hat Display', 'Urbanist', 'Sora', 'Exo 2', 'Orbitron',
+  // Elegant Serif
+  'Playfair Display', 'Cormorant Garamond', 'Lora', 'Merriweather', 'Libre Baskerville',
+  'Crimson Text', 'Source Serif 4', 'EB Garamond', 'Bitter', 'Spectral',
+  'Fraunces', 'Newsreader', 'Literata', 'Bodoni Moda',
+  // Modern Serif
+  'DM Serif Display', 'Abril Fatface', 'Cardo', 'Noto Serif', 'IBM Plex Serif',
+  // Monospace
+  'JetBrains Mono', 'Fira Code', 'IBM Plex Mono', 'Source Code Pro', 'Roboto Mono',
+  'Space Mono', 'Inconsolata', 'Ubuntu Mono', 'Overpass Mono', 'Geist Mono',
+  // Handwritten & Script
+  'Caveat', 'Pacifico', 'Dancing Script', 'Satisfy', 'Great Vibes', 'Lobster',
+  'Sacramento', 'Allura', 'Kalam', 'Shadows Into Light',
+  // Unique
+  'Righteous', 'Permanent Marker', 'Press Start 2P', 'Monoton', 'Bungee',
+  'Comfortaa', 'Fredoka', 'Lilita One', 'Russo One', 'Titan One',
+].sort();
+
 type Conference = {
   id: string
   name: string
@@ -325,14 +354,9 @@ export default function ConferenceSettingsPage({
                     onChange={(e) => updateField('font_heading', e.target.value)}
                     className="w-full rounded-md border border-input bg-background px-3 py-2"
                   >
-                    <option value="Inter">Inter</option>
-                    <option value="Poppins">Poppins</option>
-                    <option value="Playfair Display">Playfair Display</option>
-                    <option value="Space Grotesk">Space Grotesk</option>
-                    <option value="DM Sans">DM Sans</option>
-                    <option value="Outfit">Outfit</option>
-                    <option value="JetBrains Mono">JetBrains Mono</option>
-                    <option value="Cormorant Garamond">Cormorant Garamond</option>
+                    {GOOGLE_FONTS.map((font) => (
+                      <option key={font} value={font}>{font}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -342,12 +366,9 @@ export default function ConferenceSettingsPage({
                     onChange={(e) => updateField('font_body', e.target.value)}
                     className="w-full rounded-md border border-input bg-background px-3 py-2"
                   >
-                    <option value="Inter">Inter</option>
-                    <option value="Source Sans Pro">Source Sans Pro</option>
-                    <option value="Poppins">Poppins</option>
-                    <option value="DM Sans">DM Sans</option>
-                    <option value="Lora">Lora</option>
-                    <option value="Outfit">Outfit</option>
+                    {GOOGLE_FONTS.map((font) => (
+                      <option key={font} value={font}>{font}</option>
+                    ))}
                   </select>
                 </div>
               </div>
