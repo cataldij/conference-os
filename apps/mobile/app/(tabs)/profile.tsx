@@ -1,6 +1,7 @@
 import { ScrollView } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useQuery } from '@tanstack/react-query'
 import {
   YStack,
   XStack,
@@ -27,6 +28,7 @@ import {
   Edit,
 } from '@tamagui/lucide-icons'
 import { useAuth } from '../../hooks/useAuth'
+import { getUserConferences, getConnectionStats } from '@conference-os/api'
 
 // Menu item component
 function MenuItem({
@@ -78,13 +80,27 @@ function MenuItem({
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets()
-  const { profile, signOut, isLoading } = useAuth()
+  const { user, profile, signOut, isLoading } = useAuth()
 
-  // Mock stats
+  // Fetch user's conferences
+  const { data: conferences } = useQuery({
+    queryKey: ['user-conferences', user?.id],
+    queryFn: () => getUserConferences(user!.id),
+    enabled: !!user?.id,
+  })
+
+  // Fetch connection stats
+  const { data: connectionStats } = useQuery({
+    queryKey: ['connection-stats'],
+    queryFn: getConnectionStats,
+    enabled: !!user?.id,
+  })
+
+  // Real stats from API
   const stats = {
-    conferences: 5,
-    connections: 47,
-    sessionsAttended: 23,
+    conferences: conferences?.length || 0,
+    connections: connectionStats?.totalConnections || 0,
+    pending: connectionStats?.pendingReceived || 0,
   }
 
   return (
@@ -108,9 +124,7 @@ export default function ProfileScreen() {
             alignItems="center"
             justifyContent="center"
             cursor="pointer"
-            onPress={() => {
-              // TODO: Open settings
-            }}
+            onPress={() => router.push('/settings')}
           >
             <Settings size={20} color="$color" />
           </Stack>
@@ -190,9 +204,7 @@ export default function ProfileScreen() {
               variant="secondary"
               size="sm"
               marginTop="$2"
-              onPress={() => {
-                // TODO: Edit profile
-              }}
+              onPress={() => router.push('/edit-profile')}
             >
               Edit Profile
             </Button>
@@ -224,10 +236,10 @@ export default function ProfileScreen() {
           <Card variant="outline" size="sm" flex={1}>
             <YStack alignItems="center">
               <Text fontSize="$8" fontWeight="700" color="$warning">
-                {stats.sessionsAttended}
+                {stats.pending}
               </Text>
               <Text fontSize="$2" color="$colorSecondary">
-                Sessions
+                Pending
               </Text>
             </YStack>
           </Card>
@@ -240,19 +252,15 @@ export default function ProfileScreen() {
           <Card variant="outline" padding="$0" overflow="hidden">
             <MenuItem
               icon={<Ticket size={20} color="$colorSecondary" />}
-              label="My Tickets"
-              value={`${stats.conferences}`}
-              onPress={() => {
-                // TODO: Navigate to tickets
-              }}
+              label="My Ticket"
+              onPress={() => router.push('/ticket')}
             />
             <Stack height={1} backgroundColor="$borderColor" marginLeft={56} />
             <MenuItem
               icon={<Calendar size={20} color="$colorSecondary" />}
               label="My Conferences"
-              onPress={() => {
-                // TODO: Navigate to conferences
-              }}
+              value={`${stats.conferences}`}
+              onPress={() => router.push('/conferences')}
             />
             <Stack height={1} backgroundColor="$borderColor" marginLeft={56} />
             <MenuItem
@@ -271,17 +279,13 @@ export default function ProfileScreen() {
             <MenuItem
               icon={<Bell size={20} color="$colorSecondary" />}
               label="Notifications"
-              onPress={() => {
-                // TODO: Navigate to notification settings
-              }}
+              onPress={() => router.push('/settings')}
             />
             <Stack height={1} backgroundColor="$borderColor" marginLeft={56} />
             <MenuItem
               icon={<HelpCircle size={20} color="$colorSecondary" />}
               label="Help & Support"
-              onPress={() => {
-                // TODO: Navigate to help
-              }}
+              onPress={() => router.push('/settings')}
             />
           </Card>
 

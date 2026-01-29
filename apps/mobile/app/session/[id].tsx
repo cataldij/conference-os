@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { ScrollView, Pressable } from 'react-native'
+import { ScrollView, Pressable, RefreshControl, Share } from 'react-native'
 import { useLocalSearchParams, Stack, router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { format, parseISO } from 'date-fns'
 import {
   YStack,
   XStack,
@@ -28,99 +30,119 @@ import {
   Bell,
 } from '@tamagui/lucide-icons'
 import { useAuth } from '../../hooks/useAuth'
+import { useConference } from '../../hooks/useConference'
+import {
+  getSessionById,
+  saveSession,
+  unsaveSession,
+  getUserSavedSessions,
+  trackSessionInteraction,
+} from '@conference-os/api'
 
-// Mock data - will be replaced with real API calls
-const mockSession = {
-  id: '1',
-  title: 'The Future of AI in Mobile Development',
-  description:
-    'Explore how artificial intelligence is revolutionizing mobile app development, from code generation to user experience personalization. Learn practical techniques for integrating AI into your React Native apps.',
-  startTime: new Date('2024-06-15T10:00:00'),
-  endTime: new Date('2024-06-15T11:00:00'),
-  room: 'Grand Ballroom A',
-  track: 'Mobile Development',
-  trackColor: '#2563eb',
-  speakers: [
+export default function SessionDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>()
+  const insets = useSafeAreaInsets()
+  const { user, profile } = useAuth()
+  const { activeConference, theme } = useConference()
+  const queryClient = useQueryClient()
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'qa' | 'polls'>('overview')
+  const [selectedPollOption, setSelectedPollOption] = useState<string | null>(null)
+  const [hasVoted, setHasVoted] = useState(false)
+
+  // Fetch session details
+  const { data: session, isLoading, refetch } = useQuery({
+    queryKey: ['session', id],
+    queryFn: () => getSessionById(id!),
+    enabled: !!id,
+  })
+
+  // Fetch saved sessions to check if current session is saved
+  const { data: savedSessions } = useQuery({
+    queryKey: ['saved-sessions', user?.id, activeConference?.id],
+    queryFn: () => getUserSavedSessions(user!.id, activeConference!.id),
+    enabled: !!user && !!activeConference,
+  })
+
+  // Track session view
+  useQuery({
+    queryKey: ['track-view', id, user?.id],
+    queryFn: async () => {
+      if (user && id) {
+        await trackSessionInteraction(id, 'viewed')
+      }
+      return true
+    },
+    enabled: !!user && !!id,
+    staleTime: Infinity, // Only track once per session
+  })
+
+  // Save/unsave mutation
+  const saveMutation = useMutation({
+    mutationFn: async (save: boolean) => {
+      if (save) {
+        await saveSession(user!.id, id!)
+      } else {
+        await unsaveSession(user!.id, id!)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-sessions'] })
+    },
+  })
+
+  const isSaved = savedSessions?.some((s) => s.id === id) || false
+
+  const handleSaveSession = () => {
+    saveMutation.mutate(!isSaved)
+  }
+
+  const handleShare = async () => {
+    if (!session) return
+    try {
+      await Share.share({
+        title: session.title,
+        message: `Check out "${session.title}" at ${activeConference?.name || 'the conference'}`,
+      })
+    } catch (error) {
+      console.error('Share error:', error)
+    }
+  }
+
+  // Mock Q&A data (will be replaced with real API)
+  const [questions, setQuestions] = useState([
     {
       id: '1',
-      name: 'Sarah Chen',
-      title: 'Senior AI Engineer',
-      company: 'TechCorp',
-      avatarUrl: null,
+      question: 'How do you handle rate limiting when calling AI APIs?',
+      author: 'Alex M.',
+      upvotes: 24,
+      isUpvoted: false,
+      isAnswered: false,
+      timestamp: new Date(),
     },
     {
       id: '2',
-      name: 'Marcus Johnson',
-      title: 'Lead Mobile Developer',
-      company: 'InnovateLabs',
-      avatarUrl: null,
+      question: 'What are the best practices for prompt engineering?',
+      author: 'Jamie K.',
+      upvotes: 18,
+      isUpvoted: true,
+      isAnswered: false,
+      timestamp: new Date(),
     },
-  ],
-  maxAttendees: 250,
-  currentAttendees: 187,
-  isLive: true,
-  hasLivestream: true,
-  isSaved: false,
-}
+  ])
 
-const mockPoll = {
-  id: '1',
-  question: 'Which AI framework do you currently use in production?',
-  options: [
-    { id: '1', text: 'OpenAI GPT', votes: 42 },
-    { id: '2', text: 'Google Gemini', votes: 28 },
-    { id: '3', text: 'Anthropic Claude', votes: 35 },
-    { id: '4', text: 'Open source models', votes: 18 },
-  ],
-  isActive: true,
-  userVote: null,
-  totalVotes: 123,
-}
-
-const mockQuestions = [
-  {
+  // Mock poll data (will be replaced with real API)
+  const mockPoll = {
     id: '1',
-    question: 'How do you handle rate limiting when calling AI APIs?',
-    author: 'Alex M.',
-    upvotes: 24,
-    isUpvoted: false,
-    isAnswered: false,
-    timestamp: new Date('2024-06-15T10:15:00'),
-  },
-  {
-    id: '2',
-    question: 'What are the best practices for prompt engineering in mobile apps?',
-    author: 'Jamie K.',
-    upvotes: 18,
-    isUpvoted: true,
-    isAnswered: false,
-    timestamp: new Date('2024-06-15T10:12:00'),
-  },
-  {
-    id: '3',
-    question: 'Can you share examples of AI-powered features that improved user retention?',
-    author: 'Taylor R.',
-    upvotes: 31,
-    isUpvoted: false,
-    isAnswered: true,
-    timestamp: new Date('2024-06-15T10:08:00'),
-  },
-]
-
-export default function SessionDetailScreen() {
-  const { id } = useLocalSearchParams()
-  const insets = useSafeAreaInsets()
-  const { profile } = useAuth()
-
-  const [isSaved, setIsSaved] = useState(mockSession.isSaved)
-  const [selectedPollOption, setSelectedPollOption] = useState<string | null>(null)
-  const [hasVoted, setHasVoted] = useState(false)
-  const [questions, setQuestions] = useState(mockQuestions)
-  const [activeTab, setActiveTab] = useState<'overview' | 'qa' | 'polls'>('overview')
-
-  const handleSaveSession = () => {
-    setIsSaved(!isSaved)
-    // TODO: Call API to save/unsave session
+    question: 'Which framework do you currently use in production?',
+    options: [
+      { id: '1', text: 'React Native', votes: 42 },
+      { id: '2', text: 'Flutter', votes: 28 },
+      { id: '3', text: 'Native iOS/Android', votes: 35 },
+      { id: '4', text: 'Other', votes: 18 },
+    ],
+    isActive: true,
+    totalVotes: 123,
   }
 
   const handleVote = () => {
@@ -140,7 +162,27 @@ export default function SessionDetailScreen() {
     // TODO: Call API to upvote question
   }
 
-  const capacityPercentage = (mockSession.currentAttendees / mockSession.maxAttendees) * 100
+  if (isLoading || !session) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <YStack flex={1} backgroundColor="$background" alignItems="center" justifyContent="center">
+          <Text color="$colorSecondary">Loading session...</Text>
+        </YStack>
+      </>
+    )
+  }
+
+  const sessionStart = parseISO(session.start_time)
+  const sessionEnd = parseISO(session.end_time)
+  const now = new Date()
+  const isLive = now >= sessionStart && now <= sessionEnd
+  const track = (session as any).track
+  const room = (session as any).room
+  const speakers = (session as any).speakers || []
+  const maxAttendees = session.max_attendees || 200
+  const currentAttendees = 87 // TODO: Get from real data
+  const capacityPercentage = (currentAttendees / maxAttendees) * 100
 
   return (
     <>
@@ -172,7 +214,7 @@ export default function SessionDetailScreen() {
           <Text flex={1} fontSize="$5" fontWeight="600" numberOfLines={1}>
             Session Details
           </Text>
-          <Pressable onPress={() => {}}>
+          <Pressable onPress={handleShare}>
             <XStack
               width={40}
               height={40}
@@ -191,10 +233,13 @@ export default function SessionDetailScreen() {
           contentContainerStyle={{
             paddingBottom: insets.bottom + 100,
           }}
+          refreshControl={
+            <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+          }
         >
           <YStack paddingHorizontal="$5" paddingTop="$4" gap="$4">
             {/* Live Badge */}
-            {mockSession.isLive && (
+            {isLive && (
               <XStack alignItems="center" gap="$2">
                 <XStack
                   paddingHorizontal="$3"
@@ -209,68 +254,64 @@ export default function SessionDetailScreen() {
                     LIVE NOW
                   </Text>
                 </XStack>
-                {mockSession.hasLivestream && (
-                  <Text color="$colorSecondary" fontSize="$2">
-                    {mockSession.currentAttendees} watching
-                  </Text>
-                )}
+                <Text color="$colorSecondary" fontSize="$2">
+                  {currentAttendees} attending
+                </Text>
               </XStack>
             )}
 
             {/* Title */}
-            <H1>{mockSession.title}</H1>
+            <H1>{session.title}</H1>
 
             {/* Track Badge */}
-            <XStack alignItems="center" gap="$2">
-              <XStack
-                paddingHorizontal="$3"
-                paddingVertical="$2"
-                borderRadius="$3"
-                style={{ backgroundColor: mockSession.trackColor + '20' }}
-              >
-                <Text
-                  fontSize="$2"
-                  fontWeight="600"
-                  style={{ color: mockSession.trackColor }}
+            {track && (
+              <XStack alignItems="center" gap="$2">
+                <XStack
+                  paddingHorizontal="$3"
+                  paddingVertical="$2"
+                  borderRadius="$3"
+                  style={{ backgroundColor: (track.color || theme.primaryColor) + '20' }}
                 >
-                  {mockSession.track}
-                </Text>
+                  <Text
+                    fontSize="$2"
+                    fontWeight="600"
+                    style={{ color: track.color || theme.primaryColor }}
+                  >
+                    {track.name}
+                  </Text>
+                </XStack>
               </XStack>
-            </XStack>
+            )}
 
             {/* Time & Location */}
             <YStack gap="$2">
               <XStack alignItems="center" gap="$3">
                 <Clock size={18} color="$colorSecondary" />
                 <Text color="$colorSecondary" fontSize="$3">
-                  {mockSession.startTime.toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  })}{' '}
-                  -{' '}
-                  {mockSession.endTime.toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  })}
+                  {format(sessionStart, 'h:mm a')} - {format(sessionEnd, 'h:mm a')}
                 </Text>
               </XStack>
-              <XStack alignItems="center" gap="$3">
-                <MapPin size={18} color="$colorSecondary" />
-                <Text color="$colorSecondary" fontSize="$3">
-                  {mockSession.room}
-                </Text>
-              </XStack>
-              <XStack alignItems="center" gap="$3">
-                <Users size={18} color="$colorSecondary" />
-                <YStack flex={1} gap="$1">
+              {room && (
+                <XStack alignItems="center" gap="$3">
+                  <MapPin size={18} color="$colorSecondary" />
                   <Text color="$colorSecondary" fontSize="$3">
-                    {mockSession.currentAttendees} / {mockSession.maxAttendees} attendees
+                    {room.name}
                   </Text>
-                  <Progress value={capacityPercentage} max={100}>
-                    <Progress.Indicator animation="bouncy" />
-                  </Progress>
-                </YStack>
-              </XStack>
+                </XStack>
+              )}
+              {maxAttendees && (
+                <XStack alignItems="center" gap="$3">
+                  <Users size={18} color="$colorSecondary" />
+                  <YStack flex={1} gap="$1">
+                    <Text color="$colorSecondary" fontSize="$3">
+                      {currentAttendees} / {maxAttendees} attendees
+                    </Text>
+                    <Progress value={capacityPercentage} max={100}>
+                      <Progress.Indicator animation="bouncy" />
+                    </Progress>
+                  </YStack>
+                </XStack>
+              )}
             </YStack>
 
             {/* Action Buttons */}
@@ -281,10 +322,11 @@ export default function SessionDetailScreen() {
                 size="lg"
                 onPress={handleSaveSession}
                 icon={isSaved ? BookmarkCheck : Bookmark}
+                disabled={saveMutation.isPending}
               >
                 {isSaved ? 'Saved' : 'Save to Schedule'}
               </Button>
-              {mockSession.isLive && mockSession.hasLivestream && (
+              {isLive && session.livestream_url && (
                 <Button variant="primary" size="lg" icon={Video}>
                   Watch Live
                 </Button>
@@ -350,32 +392,40 @@ export default function SessionDetailScreen() {
                 <YStack gap="$2">
                   <H4>About This Session</H4>
                   <Text color="$colorSecondary" lineHeight={24}>
-                    {mockSession.description}
+                    {session.description || 'No description available.'}
                   </Text>
                 </YStack>
 
                 {/* Speakers */}
-                <YStack gap="$3">
-                  <H4>Speakers</H4>
-                  {mockSession.speakers.map((speaker) => (
-                    <Card key={speaker.id} variant="outline" padding="$4">
-                      <XStack gap="$3" alignItems="center">
-                        <Avatar src={speaker.avatarUrl} fallback={speaker.name} size="lg" />
-                        <YStack flex={1}>
-                          <Text fontWeight="600" fontSize="$4">
-                            {speaker.name}
-                          </Text>
-                          <Text color="$colorSecondary" fontSize="$3">
-                            {speaker.title}
-                          </Text>
-                          <Text color="$colorTertiary" fontSize="$2">
-                            {speaker.company}
-                          </Text>
-                        </YStack>
-                      </XStack>
-                    </Card>
-                  ))}
-                </YStack>
+                {speakers.length > 0 && (
+                  <YStack gap="$3">
+                    <H4>Speakers</H4>
+                    {speakers.map((speaker: any) => (
+                      <Card key={speaker.id} variant="outline" padding="$4">
+                        <XStack gap="$3" alignItems="center">
+                          <Avatar
+                            src={speaker.profile?.avatar_url}
+                            fallback={speaker.profile?.full_name || 'S'}
+                            size="lg"
+                          />
+                          <YStack flex={1}>
+                            <Text fontWeight="600" fontSize="$4">
+                              {speaker.profile?.full_name || 'Speaker'}
+                            </Text>
+                            <Text color="$colorSecondary" fontSize="$3">
+                              {speaker.profile?.job_title || speaker.role}
+                            </Text>
+                            {speaker.profile?.company && (
+                              <Text color="$colorTertiary" fontSize="$2">
+                                {speaker.profile.company}
+                              </Text>
+                            )}
+                          </YStack>
+                        </XStack>
+                      </Card>
+                    ))}
+                  </YStack>
+                )}
               </YStack>
             )}
 
@@ -397,11 +447,7 @@ export default function SessionDetailScreen() {
                                 {q.question}
                               </Text>
                               <Text color="$colorTertiary" fontSize="$2">
-                                {q.author} •{' '}
-                                {q.timestamp.toLocaleTimeString('en-US', {
-                                  hour: 'numeric',
-                                  minute: '2-digit',
-                                })}
+                                {q.author} • {format(q.timestamp, 'h:mm a')}
                               </Text>
                             </YStack>
                             {q.isAnswered && (
@@ -432,14 +478,7 @@ export default function SessionDetailScreen() {
                                   fontWeight="600"
                                   color={q.isUpvoted ? '#FFFFFF' : '$colorSecondary'}
                                 >
-                                  ▲
-                                </Text>
-                                <Text
-                                  fontSize="$2"
-                                  fontWeight="600"
-                                  color={q.isUpvoted ? '#FFFFFF' : '$colorSecondary'}
-                                >
-                                  {q.upvotes}
+                                  ▲ {q.upvotes}
                                 </Text>
                               </XStack>
                             </Pressable>
@@ -496,7 +535,7 @@ export default function SessionDetailScreen() {
                                 }
                                 backgroundColor={
                                   selectedPollOption === option.id
-                                    ? '$accentColor' + '10'
+                                    ? '$backgroundFocus'
                                     : '$background'
                                 }
                                 alignItems="center"

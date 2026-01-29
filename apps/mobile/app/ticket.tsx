@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import * as Brightness from 'expo-brightness'
 import QRCode from 'react-native-qrcode-svg'
+import { useQuery } from '@tanstack/react-query'
+import { format } from 'date-fns'
 import {
   YStack,
   XStack,
@@ -25,27 +27,35 @@ import {
 } from '@tamagui/lucide-icons'
 import { useConference } from '../hooks/useConference'
 import { useAuth } from '../hooks/useAuth'
+import { getConferenceMembership } from '@conference-os/api'
 
 const { width: screenWidth } = Dimensions.get('window')
 
 export default function TicketScreen() {
   const insets = useSafeAreaInsets()
-  const { activeConference } = useConference()
-  const { profile } = useAuth()
+  const { activeConference, theme } = useConference()
+  const { user, profile } = useAuth()
 
   const [originalBrightness, setOriginalBrightness] = useState<number | null>(null)
   const [isBright, setIsBright] = useState(false)
 
-  // Mock ticket data - replace with API
+  // Fetch real membership data
+  const { data: membership, isLoading } = useQuery({
+    queryKey: ['membership', activeConference?.id, user?.id],
+    queryFn: () => getConferenceMembership(activeConference!.id, user!.id),
+    enabled: !!activeConference?.id && !!user?.id,
+  })
+
+  // Build ticket data from membership and conference
   const ticket = {
-    code: 'CONF-2024-VIP-ABC123',
-    type: 'VIP Pass',
-    checkedIn: false,
-    purchaseDate: new Date('2024-05-15'),
-    conferenceName: activeConference?.name || 'Tech Summit 2024',
-    startDate: new Date('2024-06-15'),
-    endDate: new Date('2024-06-17'),
-    venueName: 'San Francisco Convention Center',
+    code: membership?.ticket_code || 'NO-TICKET',
+    type: membership?.ticket_type || 'General',
+    checkedIn: membership?.checked_in || false,
+    checkedInAt: membership?.checked_in_at,
+    conferenceName: activeConference?.name || 'Conference',
+    startDate: activeConference?.start_date ? new Date(activeConference.start_date) : new Date(),
+    endDate: activeConference?.end_date ? new Date(activeConference.end_date) : new Date(),
+    venueName: activeConference?.venue_name || 'Venue TBD',
   }
 
   // Increase brightness for QR scanning
@@ -146,7 +156,7 @@ export default function TicketScreen() {
           {/* Ticket Card */}
           <View style={styles.ticketContainer}>
             <LinearGradient
-              colors={[activeConference?.primaryColor || '#2563eb', '#1e40af']}
+              colors={[theme.primaryColor || '#2563eb', '#1e40af']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.ticketGradient}

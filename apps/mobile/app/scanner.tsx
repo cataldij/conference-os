@@ -18,6 +18,8 @@ import {
   Flashlight,
   FlashlightOff,
 } from '@tamagui/lucide-icons'
+import { useAuth } from '../hooks/useAuth'
+import { checkInAttendee, getSupabase } from '@conference-os/api'
 
 interface ScanResult {
   success: boolean
@@ -25,12 +27,14 @@ interface ScanResult {
     name: string
     email: string
     ticketType: string
+    alreadyCheckedIn?: boolean
   }
   error?: string
 }
 
 export default function ScannerScreen() {
   const insets = useSafeAreaInsets()
+  const { user } = useAuth()
   const [permission, requestPermission] = useCameraPermissions()
   const [scanned, setScanned] = useState(false)
   const [flashOn, setFlashOn] = useState(false)
@@ -38,7 +42,7 @@ export default function ScannerScreen() {
   const [isProcessing, setIsProcessing] = useState(false)
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
-    if (scanned || isProcessing) return
+    if (scanned || isProcessing || !user) return
 
     setScanned(true)
     setIsProcessing(true)
@@ -46,28 +50,69 @@ export default function ScannerScreen() {
     // Vibrate on scan
     Vibration.vibrate(100)
 
-    // TODO: Call API to verify ticket/badge
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 800))
+    try {
+      // First, look up the ticket to get attendee info
+      const supabase = getSupabase()
+      const { data: memberData, error: lookupError } = await supabase
+        .from('conference_members')
+        .select(`
+          *,
+          profile:profiles(full_name, email)
+        `)
+        .eq('ticket_code', data)
+        .single()
 
-    // Mock response
-    const success = Math.random() > 0.2
+      if (lookupError || !memberData) {
+        setResult({
+          success: false,
+          error: 'Invalid ticket code - not found',
+        })
+        setIsProcessing(false)
+        setTimeout(() => {
+          setScanned(false)
+          setResult(null)
+        }, 3000)
+        return
+      }
 
-    const scanResult: ScanResult = success
-      ? {
+      // Check if already checked in
+      if (memberData.checked_in) {
+        setResult({
           success: true,
           attendee: {
-            name: 'John Smith',
-            email: 'john.smith@example.com',
-            ticketType: 'VIP Pass',
+            name: memberData.profile?.full_name || 'Attendee',
+            email: memberData.profile?.email || '',
+            ticketType: memberData.ticket_type || 'General',
+            alreadyCheckedIn: true,
           },
-        }
-      : {
-          success: false,
-          error: 'Invalid ticket code or already checked in',
-        }
+        })
+        setIsProcessing(false)
+        setTimeout(() => {
+          setScanned(false)
+          setResult(null)
+        }, 3000)
+        return
+      }
 
-    setResult(scanResult)
+      // Perform check-in
+      const checkedIn = await checkInAttendee(data, user.id)
+
+      setResult({
+        success: true,
+        attendee: {
+          name: memberData.profile?.full_name || 'Attendee',
+          email: memberData.profile?.email || '',
+          ticketType: checkedIn.ticket_type || 'General',
+        },
+      })
+    } catch (error: any) {
+      console.error('Check-in error:', error)
+      setResult({
+        success: false,
+        error: error.message || 'Failed to check in attendee',
+      })
+    }
+
     setIsProcessing(false)
 
     // Auto-reset after 3 seconds
@@ -201,7 +246,13 @@ export default function ScannerScreen() {
               paddingBottom={insets.bottom + 20}
             >
               <Card
-                backgroundColor={result.success ? '$success' : '$error'}
+                backgroundColor={
+                  result.success
+                    ? result.attendee?.alreadyCheckedIn
+                      ? '$warning'
+                      : '$success'
+                    : '$error'
+                }
                 padding="$4"
               >
                 <XStack alignItems="center" gap="$3">
@@ -212,7 +263,11 @@ export default function ScannerScreen() {
                   )}
                   <YStack flex={1}>
                     <Text color="#FFFFFF" fontSize="$5" fontWeight="700">
-                      {result.success ? 'Check-in Successful!' : 'Check-in Failed'}
+                      {result.success
+                        ? result.attendee?.alreadyCheckedIn
+                          ? 'Already Checked In'
+                          : 'Check-in Successful!'
+                        : 'Check-in Failed'}
                     </Text>
                     {result.success && result.attendee ? (
                       <>

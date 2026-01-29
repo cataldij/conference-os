@@ -1,9 +1,9 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { ScrollView, RefreshControl } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useQuery } from '@tanstack/react-query'
-import { format, isToday, isTomorrow, addMinutes } from 'date-fns'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { format, differenceInMinutes } from 'date-fns'
 import {
   YStack,
   XStack,
@@ -28,12 +28,17 @@ import {
 import { useAuth } from '../../hooks/useAuth'
 import { useConference } from '../../hooks/useConference'
 import { ThemedBackground } from '../../components/ThemedBackground'
-import { getUserConferences, getSessionsByDate, getUserSavedSessions } from '@conference-os/api'
+import { ConferenceSwitcher } from '../../components/ConferenceSwitcher'
+import { getUserConferences, getSessionsByDate, getUserSavedSessions, saveSession, unsaveSession, getSessionRecommendations } from '@conference-os/api'
 
 export default function TodayScreen() {
   const insets = useSafeAreaInsets()
   const { user, profile } = useAuth()
   const { activeConference, theme } = useConference()
+  const queryClient = useQueryClient()
+
+  // State
+  const [showConferenceSwitcher, setShowConferenceSwitcher] = useState(false)
 
   // Use theme colors throughout
   const accentColor = theme.primaryColor
@@ -60,9 +65,48 @@ export default function TodayScreen() {
     enabled: !!user && !!activeConference,
   })
 
+  // Get AI recommendations
+  const { data: recommendations, isLoading: recommendationsLoading } = useQuery({
+    queryKey: ['recommendations', activeConference?.id],
+    queryFn: () => getSessionRecommendations(activeConference!.id),
+    enabled: !!activeConference,
+    staleTime: 1000 * 60 * 30, // Cache for 30 minutes
+  })
+
   const onRefresh = useCallback(() => {
     refetch()
-  }, [refetch])
+    queryClient.invalidateQueries({ queryKey: ['recommendations'] })
+  }, [refetch, queryClient])
+
+  // Save/unsave session mutation
+  const saveMutation = useMutation({
+    mutationFn: async ({ sessionId, save }: { sessionId: string; save: boolean }) => {
+      if (save) {
+        await saveSession(user!.id, sessionId)
+      } else {
+        await unsaveSession(user!.id, sessionId)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-sessions'] })
+    },
+  })
+
+  // Check if a session is saved
+  const isSessionSaved = (sessionId: string) => {
+    return savedSessions?.some((s) => s.id === sessionId) || false
+  }
+
+  // Toggle save session
+  const handleToggleSave = (sessionId: string) => {
+    const isSaved = isSessionSaved(sessionId)
+    saveMutation.mutate({ sessionId, save: !isSaved })
+  }
+
+  // Navigate to session detail
+  const handleSessionPress = (sessionId: string) => {
+    router.push(`/session/${sessionId}`)
+  }
 
   // Get greeting based on time of day
   const getGreeting = () => {
@@ -82,37 +126,7 @@ export default function TodayScreen() {
   ) || []
   const nextSession = upcomingSessions[0]
 
-  // Mock data for demo (remove when using real data)
-  const mockNextSession = {
-    title: 'The Future of AI in Enterprise',
-    startTime: '2:00 PM',
-    endTime: '3:00 PM',
-    room: 'Main Hall A',
-    track: 'AI & ML',
-    trackColor: '#8B5CF6',
-    speakerName: 'Sarah Chen',
-    speakerTitle: 'VP of Engineering, TechCorp',
-  }
-
-  const mockRecommendations = [
-    {
-      id: '1',
-      title: 'Building Scalable Systems',
-      time: '3:30 PM',
-      room: 'Room 201',
-      track: 'Architecture',
-      trackColor: '#10B981',
-    },
-    {
-      id: '2',
-      title: 'Design Systems Workshop',
-      time: '4:30 PM',
-      room: 'Workshop A',
-      track: 'Design',
-      trackColor: '#F59E0B',
-    },
-  ]
-
+  // Mock nearby people (will be replaced with BLE beacon data)
   const mockNearbyPeople = [
     { id: '1', name: 'Alex Johnson', title: 'Product Manager', company: 'Startup Inc' },
     { id: '2', name: 'Maria Garcia', title: 'UX Designer', company: 'Design Co' },
@@ -173,9 +187,7 @@ export default function TodayScreen() {
             size="sm"
             interactive
             marginBottom="$4"
-            onPress={() => {
-              // TODO: Open conference switcher
-            }}
+            onPress={() => setShowConferenceSwitcher(true)}
           >
             <XStack alignItems="center" justifyContent="space-between">
               <XStack alignItems="center" gap="$3">
@@ -206,32 +218,49 @@ export default function TodayScreen() {
         )}
 
         {/* Next Up Card - Premium styling */}
-        <YStack marginBottom="$6">
-          <XStack
-            justifyContent="space-between"
-            alignItems="center"
-            marginBottom="$3"
-          >
-            <H4>Next Up</H4>
-            <XStack alignItems="center" gap="$1">
-              <Clock size={14} color="$colorSecondary" />
-              <Text color="$colorSecondary" fontSize="$3">
-                in 45 min
-              </Text>
+        {(nextSession || upcomingSessions.length === 0) && (
+          <YStack marginBottom="$6">
+            <XStack
+              justifyContent="space-between"
+              alignItems="center"
+              marginBottom="$3"
+            >
+              <H4>Next Up</H4>
+              {nextSession && (
+                <XStack alignItems="center" gap="$1">
+                  <Clock size={14} color="$colorSecondary" />
+                  <Text color="$colorSecondary" fontSize="$3">
+                    in {differenceInMinutes(new Date(nextSession.start_time), now)} min
+                  </Text>
+                </XStack>
+              )}
             </XStack>
-          </XStack>
 
-          <SessionCard
-            {...mockNextSession}
-            featured
-            onPress={() => {
-              // TODO: Navigate to session detail
-            }}
-            onSave={() => {
-              // TODO: Save session
-            }}
-          />
-        </YStack>
+            {nextSession ? (
+              <SessionCard
+                title={nextSession.title}
+                startTime={format(new Date(nextSession.start_time), 'h:mm a')}
+                endTime={format(new Date(nextSession.end_time), 'h:mm a')}
+                room={(nextSession as any).room?.name}
+                track={(nextSession as any).track?.name}
+                trackColor={(nextSession as any).track?.color}
+                featured
+                isSaved={isSessionSaved(nextSession.id)}
+                onPress={() => handleSessionPress(nextSession.id)}
+                onSave={() => handleToggleSave(nextSession.id)}
+              />
+            ) : (
+              <Card variant="outline" size="md">
+                <YStack alignItems="center" gap="$2" padding="$4">
+                  <Clock size={32} color="$colorMuted" />
+                  <Text color="$colorSecondary" textAlign="center">
+                    No more sessions today
+                  </Text>
+                </YStack>
+              </Card>
+            )}
+          </YStack>
+        )}
 
         {/* AI Recommendations */}
         <YStack marginBottom="$6">
@@ -240,53 +269,83 @@ export default function TodayScreen() {
             <H4>Recommended for You</H4>
           </XStack>
 
-          <YStack gap="$3">
-            {mockRecommendations.map((session) => (
-              <Card
-                key={session.id}
-                variant="default"
-                size="sm"
-                interactive
-                onPress={() => {
-                  // TODO: Navigate to session
-                }}
-              >
-                <XStack justifyContent="space-between" alignItems="center">
-                  <YStack flex={1} gap="$1">
-                    <XStack alignItems="center" gap="$2">
-                      <Stack
-                        width={8}
-                        height={8}
-                        borderRadius={4}
-                        backgroundColor={session.trackColor}
-                      />
-                      <Text color="$colorSecondary" fontSize="$2">
-                        {session.track}
-                      </Text>
+          {recommendationsLoading ? (
+            <Card variant="outline" size="md">
+              <YStack alignItems="center" padding="$4">
+                <Text color="$colorSecondary">Finding sessions for you...</Text>
+              </YStack>
+            </Card>
+          ) : recommendations && recommendations.length > 0 ? (
+            <YStack gap="$3">
+              {recommendations.slice(0, 3).map((rec) => (
+                <Card
+                  key={rec.sessionId}
+                  variant="default"
+                  size="sm"
+                  interactive
+                  onPress={() => handleSessionPress(rec.sessionId)}
+                >
+                  <YStack gap="$2">
+                    <XStack justifyContent="space-between" alignItems="flex-start">
+                      <YStack flex={1} gap="$1">
+                        <XStack alignItems="center" gap="$2">
+                          <Stack
+                            width={8}
+                            height={8}
+                            borderRadius={4}
+                            backgroundColor={rec.trackColor || accentColor}
+                          />
+                          <Text color="$colorSecondary" fontSize="$2">
+                            {rec.track || 'General'}
+                          </Text>
+                        </XStack>
+                        <Text fontWeight="600" fontSize="$4" numberOfLines={1}>
+                          {rec.title}
+                        </Text>
+                        <XStack alignItems="center" gap="$3">
+                          <XStack alignItems="center" gap="$1">
+                            <Clock size={12} color="$colorTertiary" />
+                            <Text color="$colorTertiary" fontSize="$2">
+                              {format(new Date(rec.startTime), 'h:mm a')}
+                            </Text>
+                          </XStack>
+                          {rec.room && (
+                            <XStack alignItems="center" gap="$1">
+                              <MapPin size={12} color="$colorTertiary" />
+                              <Text color="$colorTertiary" fontSize="$2">
+                                {rec.room}
+                              </Text>
+                            </XStack>
+                          )}
+                        </XStack>
+                      </YStack>
+                      <ChevronRight size={20} color="$colorMuted" />
                     </XStack>
-                    <Text fontWeight="600" fontSize="$4" numberOfLines={1}>
-                      {session.title}
+                    {/* AI-generated reason */}
+                    <Text color="$accentColor" fontSize="$2" fontStyle="italic">
+                      ✨ {rec.reason}
                     </Text>
-                    <XStack alignItems="center" gap="$3">
-                      <XStack alignItems="center" gap="$1">
-                        <Clock size={12} color="$colorTertiary" />
-                        <Text color="$colorTertiary" fontSize="$2">
-                          {session.time}
-                        </Text>
-                      </XStack>
-                      <XStack alignItems="center" gap="$1">
-                        <MapPin size={12} color="$colorTertiary" />
-                        <Text color="$colorTertiary" fontSize="$2">
-                          {session.room}
-                        </Text>
-                      </XStack>
-                    </XStack>
                   </YStack>
-                  <ChevronRight size={20} color="$colorMuted" />
-                </XStack>
-              </Card>
-            ))}
-          </YStack>
+                </Card>
+              ))}
+            </YStack>
+          ) : (
+            <Card variant="outline" size="md">
+              <YStack alignItems="center" gap="$2" padding="$4">
+                <Sparkles size={32} color="$colorMuted" />
+                <Text color="$colorSecondary" textAlign="center">
+                  Add interests to your profile for personalized recommendations
+                </Text>
+                <Text
+                  color="$accentColor"
+                  fontWeight="500"
+                  onPress={() => router.push('/edit-profile')}
+                >
+                  Update Profile
+                </Text>
+              </YStack>
+            </Card>
+          )}
         </YStack>
 
         {/* Nearby Attendees */}
@@ -300,7 +359,12 @@ export default function TodayScreen() {
               <Users size={18} color={accentColor} />
               <H4>Nearby</H4>
             </XStack>
-            <Text color="$accentColor" fontSize="$3" fontWeight="500">
+            <Text
+              color="$accentColor"
+              fontSize="$3"
+              fontWeight="500"
+              onPress={() => router.push('/nearby')}
+            >
               See All
             </Text>
           </XStack>
@@ -313,9 +377,7 @@ export default function TodayScreen() {
                 size="sm"
                 interactive
                 width={140}
-                onPress={() => {
-                  // TODO: View profile
-                }}
+                onPress={() => router.push(`/(tabs)/network?userId=${person.id}`)}
               >
                 <YStack alignItems="center" gap="$2">
                   <Avatar fallback={person.name} size="lg" />
@@ -365,11 +427,11 @@ export default function TodayScreen() {
                   title={session.title}
                   startTime={format(new Date(session.start_time), 'h:mm a')}
                   endTime={format(new Date(session.end_time), 'h:mm a')}
+                  room={(session as any).room?.name}
                   isSaved
                   compact
-                  onPress={() => {
-                    // TODO: Navigate to session
-                  }}
+                  onPress={() => handleSessionPress(session.id)}
+                  onSave={() => handleToggleSave(session.id)}
                 />
               ))}
             </YStack>
@@ -392,6 +454,12 @@ export default function TodayScreen() {
           )}
         </YStack>
       </ScrollView>
+
+      {/* Conference Switcher Modal */}
+      <ConferenceSwitcher
+        visible={showConferenceSwitcher}
+        onClose={() => setShowConferenceSwitcher(false)}
+      />
     </ThemedBackground>
   )
 }

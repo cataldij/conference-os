@@ -327,9 +327,9 @@ function FullPagePreview({ tokens, gradients, concept, deviceSize }: FullPagePre
   const cardGradient = gradients?.card || colors.surface;
 
   const sizes = {
-    mobile: { width: 375, scale: 0.85 },
-    tablet: { width: 768, scale: 0.6 },
-    desktop: { width: 1200, scale: 0.4 },
+    mobile: { width: 375, scale: 0.9 },
+    tablet: { width: 768, scale: 0.55 },
+    desktop: { width: 1280, scale: 0.35 },
   };
 
   const { width, scale } = sizes[deviceSize];
@@ -340,7 +340,9 @@ function FullPagePreview({ tokens, gradients, concept, deviceSize }: FullPagePre
         className="origin-top rounded-2xl shadow-2xl transition-all duration-500"
         style={{
           width: width,
+          minWidth: width,
           transform: `scale(${scale})`,
+          transformOrigin: 'top center',
           backgroundColor: colors.background || '#fff',
         }}
       >
@@ -729,11 +731,40 @@ interface TypographyEditorProps {
   onFontChange: (type: 'heading' | 'body' | 'mono', value: string) => void;
 }
 
+// Comprehensive Google Fonts list organized by style
 const FONT_OPTIONS = [
-  'Inter', 'Poppins', 'Playfair Display', 'Space Grotesk', 'DM Sans', 'Outfit',
-  'JetBrains Mono', 'Cormorant Garamond', 'Source Sans Pro', 'Lora', 'Fira Code',
-  'IBM Plex Mono', 'Roboto', 'Open Sans', 'Montserrat', 'Raleway', 'Nunito',
-  'Work Sans', 'Manrope', 'Plus Jakarta Sans', 'Geist', 'Geist Mono',
+  // Modern Sans-Serif (Headings)
+  'Inter', 'Poppins', 'Space Grotesk', 'DM Sans', 'Outfit', 'Plus Jakarta Sans',
+  'Manrope', 'Satoshi', 'General Sans', 'Clash Display', 'Cabinet Grotesk',
+  'Syne', 'Unbounded', 'Bricolage Grotesque', 'Onest',
+
+  // Classic Sans-Serif
+  'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Raleway', 'Nunito', 'Source Sans 3',
+  'Work Sans', 'Rubik', 'Quicksand', 'Karla', 'Archivo', 'Figtree', 'Albert Sans',
+
+  // Display & Bold
+  'Bebas Neue', 'Oswald', 'Anton', 'Teko', 'Barlow Condensed', 'Fjalla One',
+  'Lexend', 'Red Hat Display', 'Urbanist', 'Sora', 'Exo 2', 'Orbitron',
+
+  // Elegant Serif
+  'Playfair Display', 'Cormorant Garamond', 'Lora', 'Merriweather', 'Libre Baskerville',
+  'Crimson Text', 'Source Serif 4', 'EB Garamond', 'Bitter', 'Spectral',
+  'Fraunces', 'Newsreader', 'Literata', 'Bodoni Moda',
+
+  // Modern Serif
+  'DM Serif Display', 'Abril Fatface', 'Cardo', 'Noto Serif', 'IBM Plex Serif',
+
+  // Monospace
+  'JetBrains Mono', 'Fira Code', 'IBM Plex Mono', 'Source Code Pro', 'Roboto Mono',
+  'Space Mono', 'Inconsolata', 'Ubuntu Mono', 'Overpass Mono', 'Geist Mono',
+
+  // Handwritten & Script
+  'Caveat', 'Pacifico', 'Dancing Script', 'Satisfy', 'Great Vibes', 'Lobster',
+  'Sacramento', 'Allura', 'Kalam', 'Shadows Into Light',
+
+  // Unique & Experimental
+  'Righteous', 'Permanent Marker', 'Press Start 2P', 'Monoton', 'Bungee',
+  'Comfortaa', 'Fredoka', 'Lilita One', 'Russo One', 'Titan One',
 ];
 
 function TypographyEditor({ typography, onFontChange }: TypographyEditorProps) {
@@ -806,6 +837,28 @@ export function DesignEditor({ conferenceId }: DesignEditorProps) {
     setTokens,
     updateColor,
     updateFont,
+
+  // Dynamically load Google Fonts when typography changes
+  useEffect(() => {
+    const fonts = tokens.typography?.fontFamily;
+    if (!fonts) return;
+
+    const fontFamilies = [fonts.heading, fonts.body, fonts.mono].filter(Boolean);
+    const uniqueFonts = [...new Set(fontFamilies)];
+
+    // Remove old font links
+    document.querySelectorAll('link[data-dynamic-font]').forEach(el => el.remove());
+
+    // Add new font links
+    uniqueFonts.forEach(font => {
+      const fontName = font.replace(/ /g, '+');
+      const link = document.createElement('link');
+      link.href = `https://fonts.googleapis.com/css2?family=${fontName}:wght@400;500;600;700;800&display=swap`;
+      link.rel = 'stylesheet';
+      link.setAttribute('data-dynamic-font', font);
+      document.head.appendChild(link);
+    });
+  }, [tokens.typography?.fontFamily]);
     generateFromPrompt,
     saveTokens,
     undo,

@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "cd ../.. && npm ci --legacy-peer-deps",
-  "buildCommand": "cd ../.. && npm run build -- --filter=@conference-os/web",
+  "installCommand": "npm install",
+  "buildCommand": "cd ../.. && npx turbo build --filter=@conference-os/web",
   "outputDirectory": ".next",
   "framework": "nextjs"
 }

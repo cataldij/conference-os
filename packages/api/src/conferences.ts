@@ -348,3 +348,97 @@ export async function createConference(input: ConferenceInput, createdBy: string
 
   return data
 }
+
+// =============================================
+// AI RECOMMENDATIONS
+// =============================================
+
+export interface SessionRecommendation {
+  sessionId: string
+  title: string
+  score: number
+  reason: string
+  type: 'interest_match' | 'popular' | 'similar_attendees' | 'skill_building' | 'schedule_fit'
+  track?: string
+  trackColor?: string
+  startTime: string
+  room?: string
+}
+
+export async function getSessionRecommendations(
+  conferenceId: string,
+  forceRefresh = false
+): Promise<SessionRecommendation[]> {
+  const supabase = getSupabase()
+  const { data: { session } } = await supabase.auth.getSession()
+
+  if (!session?.access_token) {
+    throw new Error('Not authenticated')
+  }
+
+  const response = await fetch(
+    `${process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/ai-recommendations`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ conferenceId, forceRefresh }),
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to get recommendations')
+  }
+
+  const data = await response.json()
+  return data.recommendations || []
+}
+
+// Track session interaction (for improving recommendations)
+export async function trackSessionInteraction(
+  sessionId: string,
+  interactionType: 'viewed' | 'saved' | 'attended' | 'rated' | 'shared',
+  rating?: number,
+  durationSeconds?: number
+) {
+  const supabase = getSupabase()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabase
+    .from('session_interactions')
+    .upsert({
+      user_id: user.id,
+      session_id: sessionId,
+      interaction_type: interactionType,
+      rating,
+      duration_seconds: durationSeconds,
+    }, {
+      onConflict: 'user_id,session_id,interaction_type'
+    })
+
+  if (error) throw error
+}
+
+// Update user interests (triggers embedding regeneration)
+export async function updateUserInterests(interests: string[]) {
+  const supabase = getSupabase()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      interests,
+      interest_embedding: null, // Clear to force regeneration
+      embedding_updated_at: null,
+    })
+    .eq('id', user.id)
+
+  if (error) throw error
+}

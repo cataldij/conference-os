@@ -1,7 +1,9 @@
-import { FlatList } from 'react-native'
+import { useState, useEffect } from 'react'
+import { FlatList, RefreshControl } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { formatDistanceToNow } from 'date-fns'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   YStack,
   XStack,
@@ -9,8 +11,11 @@ import {
   Stack,
   H2,
   Avatar,
+  Spinner,
 } from '@conference-os/ui'
-import { Search, Edit } from '@tamagui/lucide-icons'
+import { Search, Edit, MessageCircle } from '@tamagui/lucide-icons'
+import { getUserChatRooms, subscribeToUserChats, ChatRoomWithDetails } from '@conference-os/api'
+import { useAuth } from '../../hooks/useAuth'
 
 // Conversation item component
 function ConversationItem({
@@ -85,47 +90,53 @@ function ConversationItem({
   )
 }
 
+// Helper to get room display name
+function getRoomDisplayName(room: ChatRoomWithDetails): string {
+  if (room.room_type === 'direct' && room.otherParticipants.length > 0) {
+    return room.otherParticipants[0].full_name || 'Unknown'
+  }
+  if (room.name) {
+    return room.name
+  }
+  if (room.room_type === 'group' && room.otherParticipants.length > 0) {
+    return room.otherParticipants.map(p => p.full_name?.split(' ')[0]).join(', ')
+  }
+  return 'Chat'
+}
+
+// Helper to get avatar URL
+function getRoomAvatarUrl(room: ChatRoomWithDetails): string | undefined {
+  if (room.room_type === 'direct' && room.otherParticipants.length > 0) {
+    return room.otherParticipants[0].avatar_url || undefined
+  }
+  return undefined
+}
+
 export default function MessagesScreen() {
   const insets = useSafeAreaInsets()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
 
-  // Mock conversations
-  const mockConversations = [
-    {
-      id: '1',
-      name: 'Sarah Chen',
-      lastMessage: 'Great meeting you! Let\'s grab coffee tomorrow.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 min ago
-      unreadCount: 2,
-    },
-    {
-      id: '2',
-      name: 'AI & ML Track',
-      lastMessage: 'Alex: The session on MLOps was fantastic!',
-      timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 min ago
-      unreadCount: 5,
-    },
-    {
-      id: '3',
-      name: 'James Wilson',
-      lastMessage: 'Thanks for the tip about React performance',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-      unreadCount: 0,
-    },
-    {
-      id: '4',
-      name: 'Tech Conference 2024',
-      lastMessage: 'Organizer: Reminder - Keynote starts in 1 hour',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 hours ago
-      unreadCount: 0,
-    },
-    {
-      id: '5',
-      name: 'Maria Garcia',
-      lastMessage: 'I\'ll share the design system resources',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-      unreadCount: 0,
-    },
-  ]
+  // Fetch chat rooms
+  const { data: chatRooms, isLoading, refetch, isRefetching } = useQuery({
+    queryKey: ['chat-rooms'],
+    queryFn: getUserChatRooms,
+    enabled: !!user,
+  })
+
+  // Subscribe to realtime updates
+  useEffect(() => {
+    if (!user) return
+
+    const unsubscribe = subscribeToUserChats(user.id, () => {
+      // Refetch chat rooms when any message changes
+      queryClient.invalidateQueries({ queryKey: ['chat-rooms'] })
+    })
+
+    return () => {
+      unsubscribe()
+    }
+  }, [user, queryClient])
 
   return (
     <YStack flex={1} backgroundColor="$background">
@@ -166,41 +177,59 @@ export default function MessagesScreen() {
       </YStack>
 
       {/* Conversations List */}
-      <FlatList
-        data={mockConversations}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + 100,
-        }}
-        showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => (
-          <Stack
-            height={1}
-            backgroundColor="$borderColor"
-            marginLeft={76}
-            marginRight={20}
-          />
-        )}
-        renderItem={({ item }) => (
-          <ConversationItem
-            name={item.name}
-            lastMessage={item.lastMessage}
-            timestamp={item.timestamp}
-            unreadCount={item.unreadCount}
-            onPress={() => {
-              // TODO: Navigate to chat
-            }}
-          />
-        )}
-        ListEmptyComponent={
-          <YStack alignItems="center" padding="$8">
-            <Text color="$colorSecondary">No messages yet</Text>
-            <Text color="$colorTertiary" fontSize="$3" textAlign="center" marginTop="$2">
-              Start networking to connect with other attendees
-            </Text>
-          </YStack>
-        }
-      />
+      {isLoading ? (
+        <YStack flex={1} alignItems="center" justifyContent="center">
+          <Spinner size="large" />
+          <Text color="$colorSecondary" marginTop="$3">Loading conversations...</Text>
+        </YStack>
+      ) : (
+        <FlatList
+          data={chatRooms || []}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{
+            paddingBottom: insets.bottom + 100,
+            flexGrow: 1,
+          }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+            />
+          }
+          ItemSeparatorComponent={() => (
+            <Stack
+              height={1}
+              backgroundColor="$borderColor"
+              marginLeft={76}
+              marginRight={20}
+            />
+          )}
+          renderItem={({ item }) => (
+            <ConversationItem
+              name={getRoomDisplayName(item)}
+              lastMessage={item.lastMessage?.content || 'No messages yet'}
+              timestamp={new Date(item.lastMessage?.created_at || item.created_at)}
+              unreadCount={item.unreadCount}
+              avatarUrl={getRoomAvatarUrl(item)}
+              onPress={() => {
+                router.push(`/chat/${item.id}`)
+              }}
+            />
+          )}
+          ListEmptyComponent={
+            <YStack flex={1} alignItems="center" justifyContent="center" padding="$8">
+              <MessageCircle size={64} color="$colorTertiary" />
+              <Text color="$colorSecondary" fontSize="$5" fontWeight="600" marginTop="$4">
+                No messages yet
+              </Text>
+              <Text color="$colorTertiary" fontSize="$3" textAlign="center" marginTop="$2">
+                Connect with other attendees to start chatting
+              </Text>
+            </YStack>
+          }
+        />
+      )}
     </YStack>
   )
 }

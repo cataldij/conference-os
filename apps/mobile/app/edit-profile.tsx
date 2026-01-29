@@ -9,6 +9,8 @@ import {
 import { Stack, router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
+import * as FileSystem from 'expo-file-system'
+import { decode } from 'base64-arraybuffer'
 import {
   YStack,
   XStack,
@@ -31,8 +33,36 @@ import {
   Twitter,
   Globe,
   Save,
+  Sparkles,
+  X,
+  Plus,
 } from '@tamagui/lucide-icons'
 import { useAuth } from '../hooks/useAuth'
+import { updateProfile, getSupabase } from '@conference-os/api'
+
+// Common interests for conference attendees
+const SUGGESTED_INTERESTS = [
+  'AI & Machine Learning',
+  'Web Development',
+  'Mobile Development',
+  'Cloud & DevOps',
+  'Data Science',
+  'Product Management',
+  'UX Design',
+  'Cybersecurity',
+  'Blockchain',
+  'IoT',
+  'Startups',
+  'Leadership',
+  'Marketing',
+  'Sales',
+  'Finance',
+  'Healthcare Tech',
+  'Sustainability',
+  'AR/VR',
+  'Gaming',
+  'E-commerce',
+]
 
 export default function EditProfileScreen() {
   const insets = useSafeAreaInsets()
@@ -47,7 +77,10 @@ export default function EditProfileScreen() {
   const [twitterUrl, setTwitterUrl] = useState(profile?.twitter_url || '')
   const [websiteUrl, setWebsiteUrl] = useState(profile?.website_url || '')
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '')
+  const [interests, setInterests] = useState<string[]>(profile?.interests || [])
+  const [pendingAvatarUri, setPendingAvatarUri] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -65,8 +98,8 @@ export default function EditProfileScreen() {
     })
 
     if (!result.canceled && result.assets[0]) {
-      setAvatarUrl(result.assets[0].uri)
-      // TODO: Upload to Supabase Storage and get public URL
+      setPendingAvatarUri(result.assets[0].uri)
+      setAvatarUrl(result.assets[0].uri) // Show preview
     }
   }
 
@@ -85,9 +118,64 @@ export default function EditProfileScreen() {
     })
 
     if (!result.canceled && result.assets[0]) {
-      setAvatarUrl(result.assets[0].uri)
-      // TODO: Upload to Supabase Storage and get public URL
+      setPendingAvatarUri(result.assets[0].uri)
+      setAvatarUrl(result.assets[0].uri) // Show preview
     }
+  }
+
+  // Upload avatar to Supabase Storage
+  const uploadAvatar = async (uri: string): Promise<string | null> => {
+    try {
+      setIsUploadingAvatar(true)
+      const supabase = getSupabase()
+
+      // Read file as base64
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      })
+
+      // Determine file extension
+      const ext = uri.split('.').pop()?.toLowerCase() || 'jpg'
+      const contentType = ext === 'png' ? 'image/png' : 'image/jpeg'
+      const fileName = `${profile?.id}/avatar.${ext}`
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, decode(base64), {
+          contentType,
+          upsert: true,
+        })
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName)
+
+      // Add cache buster to force refresh
+      return `${urlData.publicUrl}?t=${Date.now()}`
+    } catch (error) {
+      console.error('Avatar upload error:', error)
+      return null
+    } finally {
+      setIsUploadingAvatar(false)
+    }
+  }
+
+  // Toggle interest selection
+  const toggleInterest = (interest: string) => {
+    setInterests((prev) =>
+      prev.includes(interest)
+        ? prev.filter((i) => i !== interest)
+        : [...prev, interest]
+    )
+  }
+
+  // Remove an interest
+  const removeInterest = (interest: string) => {
+    setInterests((prev) => prev.filter((i) => i !== interest))
   }
 
   const handleSave = async () => {
@@ -96,23 +184,43 @@ export default function EditProfileScreen() {
       return
     }
 
+    if (!profile?.id) {
+      Alert.alert('Error', 'Profile not found. Please try again.')
+      return
+    }
+
     setIsSaving(true)
 
     try {
-      // TODO: Call Supabase to update profile
-      // await supabase.from('profiles').update({
-      //   full_name: fullName,
-      //   job_title: jobTitle,
-      //   company,
-      //   bio,
-      //   linkedin_url: linkedinUrl,
-      //   twitter_url: twitterUrl,
-      //   website_url: websiteUrl,
-      //   avatar_url: avatarUrl,
-      // }).eq('id', profile?.id)
+      // Upload avatar if changed
+      let newAvatarUrl = avatarUrl
+      if (pendingAvatarUri) {
+        const uploadedUrl = await uploadAvatar(pendingAvatarUri)
+        if (uploadedUrl) {
+          newAvatarUrl = uploadedUrl
+        }
+      }
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Update profile via API
+      await updateProfile(profile.id, {
+        fullName,
+        jobTitle: jobTitle || undefined,
+        company: company || undefined,
+        bio: bio || undefined,
+        interests: interests.length > 0 ? interests : undefined,
+        linkedinUrl: linkedinUrl || '',
+        twitterUrl: twitterUrl || '',
+        websiteUrl: websiteUrl || '',
+      })
+
+      // If avatar was uploaded, update avatar_url separately
+      if (pendingAvatarUri && newAvatarUrl !== avatarUrl) {
+        const supabase = getSupabase()
+        await supabase
+          .from('profiles')
+          .update({ avatar_url: newAvatarUrl })
+          .eq('id', profile.id)
+      }
 
       await refreshProfile()
 
@@ -120,6 +228,7 @@ export default function EditProfileScreen() {
         { text: 'OK', onPress: () => router.back() },
       ])
     } catch (error) {
+      console.error('Save error:', error)
       Alert.alert('Error', 'Failed to update profile. Please try again.')
     } finally {
       setIsSaving(false)
@@ -280,6 +389,73 @@ export default function EditProfileScreen() {
                   <Text fontSize="$2" color="$colorTertiary" paddingHorizontal="$1">
                     {bio.length}/500 characters
                   </Text>
+                </YStack>
+              </YStack>
+
+              {/* Interests */}
+              <YStack gap="$4">
+                <YStack gap="$1">
+                  <XStack alignItems="center" gap="$2">
+                    <Sparkles size={18} color="$accentColor" />
+                    <Text fontSize="$4" fontWeight="700">
+                      Interests
+                    </Text>
+                  </XStack>
+                  <Text fontSize="$2" color="$colorSecondary">
+                    Select your interests for personalized session recommendations
+                  </Text>
+                </YStack>
+
+                {/* Selected interests */}
+                {interests.length > 0 && (
+                  <XStack flexWrap="wrap" gap="$2">
+                    {interests.map((interest) => (
+                      <XStack
+                        key={interest}
+                        backgroundColor="$accentColor"
+                        paddingVertical="$2"
+                        paddingHorizontal="$3"
+                        borderRadius="$10"
+                        alignItems="center"
+                        gap="$2"
+                      >
+                        <Text color="#FFFFFF" fontSize="$3" fontWeight="500">
+                          {interest}
+                        </Text>
+                        <Pressable onPress={() => removeInterest(interest)}>
+                          <X size={14} color="#FFFFFF" />
+                        </Pressable>
+                      </XStack>
+                    ))}
+                  </XStack>
+                )}
+
+                {/* Suggested interests */}
+                <YStack gap="$2">
+                  <Text fontSize="$2" color="$colorTertiary">
+                    Suggested interests:
+                  </Text>
+                  <XStack flexWrap="wrap" gap="$2">
+                    {SUGGESTED_INTERESTS.filter((i) => !interests.includes(i)).map((interest) => (
+                      <Pressable key={interest} onPress={() => toggleInterest(interest)}>
+                        <XStack
+                          backgroundColor="$backgroundStrong"
+                          paddingVertical="$2"
+                          paddingHorizontal="$3"
+                          borderRadius="$10"
+                          borderWidth={1}
+                          borderColor="$borderColor"
+                          alignItems="center"
+                          gap="$1"
+                        >
+                          <Plus size={12} color="$colorSecondary" />
+                          <Text color="$color" fontSize="$3">
+                            {interest}
+                          </Text>
+                        </XStack>
+                      </Pressable>
+                    ))}
+                  </XStack>
                 </YStack>
               </YStack>
 

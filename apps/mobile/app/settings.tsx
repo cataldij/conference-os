@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ScrollView, Pressable, Alert, Switch as RNSwitch } from 'react-native'
 import { Stack, router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useMutation } from '@tanstack/react-query'
 import {
   YStack,
   XStack,
@@ -32,6 +33,7 @@ import {
 } from '@tamagui/lucide-icons'
 import { useAuth } from '../hooks/useAuth'
 import { useColorScheme } from 'react-native'
+import { updateProfile } from '@conference-os/api'
 
 interface SettingItemProps {
   icon: React.ReactNode
@@ -96,17 +98,53 @@ function SettingItem({
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets()
-  const { signOut, profile } = useAuth()
+  const { signOut, profile, refreshProfile } = useAuth()
   const systemColorScheme = useColorScheme()
 
-  // Settings state
-  const [pushEnabled, setPushEnabled] = useState(true)
+  // Initialize from profile
+  const [pushEnabled, setPushEnabled] = useState(profile?.push_enabled ?? true)
+  const [networkingEnabled, setNetworkingEnabled] = useState(profile?.networking_enabled ?? true)
   const [sessionReminders, setSessionReminders] = useState(true)
   const [messageNotifications, setMessageNotifications] = useState(true)
   const [locationEnabled, setLocationEnabled] = useState(true)
   const [beaconsEnabled, setBeaconsEnabled] = useState(true)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [theme, setTheme] = useState<'system' | 'light' | 'dark'>('system')
+
+  // Update local state when profile loads
+  useEffect(() => {
+    if (profile) {
+      setPushEnabled(profile.push_enabled ?? true)
+      setNetworkingEnabled(profile.networking_enabled ?? true)
+    }
+  }, [profile])
+
+  // Mutation to save settings
+  const saveMutation = useMutation({
+    mutationFn: (updates: { pushEnabled?: boolean; networkingEnabled?: boolean }) =>
+      updateProfile(profile!.id, updates),
+    onSuccess: () => {
+      refreshProfile()
+    },
+    onError: (error: Error) => {
+      Alert.alert('Error', 'Failed to save settings')
+    },
+  })
+
+  // Auto-save when settings change
+  const handlePushChange = (value: boolean) => {
+    setPushEnabled(value)
+    if (profile) {
+      saveMutation.mutate({ pushEnabled: value })
+    }
+  }
+
+  const handleNetworkingChange = (value: boolean) => {
+    setNetworkingEnabled(value)
+    if (profile) {
+      saveMutation.mutate({ networkingEnabled: value })
+    }
+  }
 
   const handleSignOut = () => {
     Alert.alert(
@@ -189,7 +227,7 @@ export default function SettingsScreen() {
                 >
                   <RNSwitch
                     value={pushEnabled}
-                    onValueChange={setPushEnabled}
+                    onValueChange={handlePushChange}
                     trackColor={{ false: '#767577', true: '#2563eb' }}
                     thumbColor="#ffffff"
                   />
@@ -275,11 +313,16 @@ export default function SettingsScreen() {
                 <SettingItem
                   icon={<Shield size={20} color="$colorSecondary" />}
                   label="Networking Visibility"
-                  value="Visible to other attendees"
-                  onPress={() => {
-                    // TODO: Navigate to privacy settings
-                  }}
-                />
+                  value={networkingEnabled ? 'Visible to attendees' : 'Hidden from attendees'}
+                  showChevron={false}
+                >
+                  <RNSwitch
+                    value={networkingEnabled}
+                    onValueChange={handleNetworkingChange}
+                    trackColor={{ false: '#767577', true: '#2563eb' }}
+                    thumbColor="#ffffff"
+                  />
+                </SettingItem>
               </Card>
             </YStack>
 

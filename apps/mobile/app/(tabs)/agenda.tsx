@@ -1,27 +1,43 @@
-import { useState } from 'react'
-import { ScrollView, FlatList } from 'react-native'
+import { useState, useMemo } from 'react'
+import { ScrollView, FlatList, RefreshControl } from 'react-native'
+import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { format, addDays, isSameDay } from 'date-fns'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { format, addDays, isSameDay, parseISO, eachDayOfInterval } from 'date-fns'
 import {
   YStack,
   XStack,
   Text,
   Stack,
   H2,
+  Card,
   SessionCard,
 } from '@conference-os/ui'
 import { Calendar, Filter, Search } from '@tamagui/lucide-icons'
+import { useAuth } from '../../hooks/useAuth'
 import { useConference } from '../../hooks/useConference'
+import { ThemedBackground } from '../../components/ThemedBackground'
+import {
+  getConferenceSessions,
+  getConferenceTracks,
+  getUserSavedSessions,
+  saveSession,
+  unsaveSession,
+  Session,
+  Track,
+} from '@conference-os/api'
 
 // Date pill component
 function DatePill({
   date,
   isSelected,
   onPress,
+  accentColor,
 }: {
   date: Date
   isSelected: boolean
   onPress: () => void
+  accentColor: string
 }) {
   const dayName = format(date, 'EEE')
   const dayNum = format(date, 'd')
@@ -33,7 +49,7 @@ function DatePill({
       paddingHorizontal="$3"
       paddingVertical="$2"
       borderRadius="$4"
-      backgroundColor={isSelected ? '$accentColor' : 'transparent'}
+      backgroundColor={isSelected ? accentColor : 'transparent'}
       onPress={onPress}
       cursor="pointer"
       minWidth={56}
@@ -57,7 +73,7 @@ function DatePill({
           width={6}
           height={6}
           borderRadius={3}
-          backgroundColor="$accentColor"
+          backgroundColor={accentColor}
           marginTop="$1"
         />
       )}
@@ -67,88 +83,127 @@ function DatePill({
 
 export default function AgendaScreen() {
   const insets = useSafeAreaInsets()
-  const { activeConference, accentColor } = useConference()
-  const [selectedDate, setSelectedDate] = useState(new Date())
-  const [selectedTrack, setSelectedTrack] = useState<string | null>(null)
+  const { user } = useAuth()
+  const { activeConference, theme } = useConference()
+  const queryClient = useQueryClient()
+  const accentColor = theme.primaryColor
 
-  // Generate dates for the conference (mock: 3 days)
-  const dates = Array.from({ length: 5 }, (_, i) => addDays(new Date(), i - 1))
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null)
 
-  // Mock sessions
-  const mockSessions = [
-    {
-      id: '1',
-      title: 'Opening Keynote: The Future is Now',
-      startTime: '9:00 AM',
-      endTime: '10:00 AM',
-      room: 'Main Hall',
-      track: 'Keynote',
-      trackColor: '#2563EB',
-      speakerName: 'Dr. Jane Smith',
-      speakerTitle: 'CEO, Future Labs',
-      isLive: true,
-    },
-    {
-      id: '2',
-      title: 'Building Scalable Microservices',
-      startTime: '10:30 AM',
-      endTime: '11:30 AM',
-      room: 'Room 101',
-      track: 'Engineering',
-      trackColor: '#10B981',
-      speakerName: 'Mike Johnson',
-      speakerTitle: 'Staff Engineer, BigTech',
-    },
-    {
-      id: '3',
-      title: 'Design Systems at Scale',
-      startTime: '11:30 AM',
-      endTime: '12:30 PM',
-      room: 'Room 102',
-      track: 'Design',
-      trackColor: '#F59E0B',
-      speakerName: 'Sarah Lee',
-      speakerTitle: 'Design Director, Creative Co',
-    },
-    {
-      id: '4',
-      title: 'Lunch Break & Networking',
-      startTime: '12:30 PM',
-      endTime: '2:00 PM',
-      room: 'Expo Hall',
-      track: 'Break',
-      trackColor: '#6B7280',
-    },
-    {
-      id: '5',
-      title: 'AI/ML in Production',
-      startTime: '2:00 PM',
-      endTime: '3:00 PM',
-      room: 'Main Hall',
-      track: 'AI & ML',
-      trackColor: '#8B5CF6',
-      speakerName: 'Alex Chen',
-      speakerTitle: 'ML Lead, AI Startup',
-    },
-  ]
+  // Fetch all sessions for the conference
+  const { data: sessions, isLoading: sessionsLoading, refetch } = useQuery({
+    queryKey: ['conference-sessions', activeConference?.id],
+    queryFn: () => getConferenceSessions(activeConference!.id),
+    enabled: !!activeConference,
+  })
 
-  // Tracks
-  const tracks = [
-    { id: 'all', name: 'All', color: accentColor },
-    { id: 'keynote', name: 'Keynote', color: '#2563EB' },
-    { id: 'engineering', name: 'Engineering', color: '#10B981' },
-    { id: 'design', name: 'Design', color: '#F59E0B' },
-    { id: 'ai', name: 'AI & ML', color: '#8B5CF6' },
-  ]
+  // Fetch tracks for filtering
+  const { data: tracks } = useQuery({
+    queryKey: ['conference-tracks', activeConference?.id],
+    queryFn: () => getConferenceTracks(activeConference!.id),
+    enabled: !!activeConference,
+  })
+
+  // Fetch user's saved sessions
+  const { data: savedSessions } = useQuery({
+    queryKey: ['saved-sessions', user?.id, activeConference?.id],
+    queryFn: () => getUserSavedSessions(user!.id, activeConference!.id),
+    enabled: !!user && !!activeConference,
+  })
+
+  // Save/unsave mutation
+  const saveMutation = useMutation({
+    mutationFn: async ({ sessionId, save }: { sessionId: string; save: boolean }) => {
+      if (save) {
+        await saveSession(user!.id, sessionId)
+      } else {
+        await unsaveSession(user!.id, sessionId)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-sessions'] })
+    },
+  })
+
+  // Generate conference dates
+  const conferenceDates = useMemo(() => {
+    if (!activeConference) {
+      // Fallback: show 5 days starting from yesterday
+      return Array.from({ length: 5 }, (_, i) => addDays(new Date(), i - 1))
+    }
+
+    const start = parseISO(activeConference.start_date)
+    const end = parseISO(activeConference.end_date)
+
+    return eachDayOfInterval({ start, end })
+  }, [activeConference])
+
+  // Set initial selected date to today if within conference, otherwise first day
+  useMemo(() => {
+    const today = new Date()
+    const isWithinConference = conferenceDates.some(d => isSameDay(d, today))
+    if (isWithinConference) {
+      setSelectedDate(today)
+    } else if (conferenceDates.length > 0) {
+      setSelectedDate(conferenceDates[0])
+    }
+  }, [conferenceDates])
+
+  // Filter sessions by date and track
+  const filteredSessions = useMemo(() => {
+    if (!sessions) return []
+
+    return sessions
+      .filter((session) => {
+        const sessionDate = parseISO(session.start_time)
+        const matchesDate = isSameDay(sessionDate, selectedDate)
+        const matchesTrack = !selectedTrackId || session.track_id === selectedTrackId
+        return matchesDate && matchesTrack
+      })
+      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+  }, [sessions, selectedDate, selectedTrackId])
+
+  // Check if session is saved
+  const isSessionSaved = (sessionId: string) => {
+    return savedSessions?.some((s) => s.id === sessionId) || false
+  }
+
+  // Handle save toggle
+  const handleToggleSave = (sessionId: string) => {
+    const isSaved = isSessionSaved(sessionId)
+    saveMutation.mutate({ sessionId, save: !isSaved })
+  }
+
+  // Navigate to session detail
+  const handleSessionPress = (sessionId: string) => {
+    router.push(`/session/${sessionId}`)
+  }
+
+  // Build track filter options
+  const trackFilters = useMemo(() => {
+    const allOption = { id: 'all', name: 'All', color: accentColor }
+    if (!tracks) return [allOption]
+
+    return [allOption, ...tracks.map(t => ({
+      id: t.id,
+      name: t.name,
+      color: t.color || accentColor,
+    }))]
+  }, [tracks, accentColor])
+
+  // Get track info for a session
+  const getSessionTrack = (session: Session): Track | undefined => {
+    return tracks?.find(t => t.id === session.track_id)
+  }
 
   return (
-    <YStack flex={1} backgroundColor="$background">
+    <ThemedBackground>
       {/* Header */}
       <YStack
         paddingTop={insets.top + 16}
         paddingHorizontal="$5"
         paddingBottom="$3"
-        backgroundColor="$background"
       >
         <XStack justifyContent="space-between" alignItems="center" marginBottom="$4">
           <H2>Agenda</H2>
@@ -184,12 +239,13 @@ export default function AgendaScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: 8 }}
         >
-          {dates.map((date) => (
+          {conferenceDates.map((date) => (
             <DatePill
               key={date.toISOString()}
               date={date}
               isSelected={isSameDay(date, selectedDate)}
               onPress={() => setSelectedDate(date)}
+              accentColor={accentColor}
             />
           ))}
         </ScrollView>
@@ -201,39 +257,34 @@ export default function AgendaScreen() {
           style={{ marginTop: 16 }}
           contentContainerStyle={{ gap: 8 }}
         >
-          {tracks.map((track) => (
-            <Stack
-              key={track.id}
-              paddingHorizontal="$3"
-              paddingVertical="$2"
-              borderRadius="$3"
-              backgroundColor={
-                selectedTrack === track.id || (selectedTrack === null && track.id === 'all')
-                  ? track.color
-                  : '$backgroundStrong'
-              }
-              onPress={() => setSelectedTrack(track.id === 'all' ? null : track.id)}
-              cursor="pointer"
-            >
-              <Text
-                fontSize="$3"
-                fontWeight="500"
-                color={
-                  selectedTrack === track.id || (selectedTrack === null && track.id === 'all')
-                    ? '#FFFFFF'
-                    : '$color'
-                }
+          {trackFilters.map((track) => {
+            const isSelected = selectedTrackId === track.id || (selectedTrackId === null && track.id === 'all')
+            return (
+              <Stack
+                key={track.id}
+                paddingHorizontal="$3"
+                paddingVertical="$2"
+                borderRadius="$3"
+                backgroundColor={isSelected ? track.color : '$backgroundStrong'}
+                onPress={() => setSelectedTrackId(track.id === 'all' ? null : track.id)}
+                cursor="pointer"
               >
-                {track.name}
-              </Text>
-            </Stack>
-          ))}
+                <Text
+                  fontSize="$3"
+                  fontWeight="500"
+                  color={isSelected ? '#FFFFFF' : '$color'}
+                >
+                  {track.name}
+                </Text>
+              </Stack>
+            )
+          })}
         </ScrollView>
       </YStack>
 
       {/* Sessions List */}
       <FlatList
-        data={mockSessions}
+        data={filteredSessions}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{
           paddingHorizontal: 20,
@@ -241,26 +292,47 @@ export default function AgendaScreen() {
           gap: 12,
         }}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <SessionCard
-            title={item.title}
-            startTime={item.startTime}
-            endTime={item.endTime}
-            room={item.room}
-            track={item.track}
-            trackColor={item.trackColor}
-            speakerName={item.speakerName}
-            speakerTitle={item.speakerTitle}
-            isLive={item.isLive}
-            onPress={() => {
-              // TODO: Navigate to session detail
-            }}
-            onSave={() => {
-              // TODO: Save session
-            }}
-          />
-        )}
+        refreshControl={
+          <RefreshControl refreshing={sessionsLoading} onRefresh={refetch} />
+        }
+        ListEmptyComponent={
+          <Card variant="outline" size="md" marginTop="$4">
+            <YStack alignItems="center" gap="$2" padding="$6">
+              <Calendar size={40} color="$colorMuted" />
+              <Text color="$colorSecondary" textAlign="center" fontSize="$4">
+                {sessionsLoading ? 'Loading sessions...' : 'No sessions scheduled'}
+              </Text>
+              {!sessionsLoading && (
+                <Text color="$colorTertiary" textAlign="center" fontSize="$3">
+                  {selectedTrackId ? 'Try selecting a different track' : 'Check back later for updates'}
+                </Text>
+              )}
+            </YStack>
+          </Card>
+        }
+        renderItem={({ item: session }) => {
+          const track = getSessionTrack(session)
+          const sessionStart = parseISO(session.start_time)
+          const sessionEnd = parseISO(session.end_time)
+          const now = new Date()
+          const isLive = now >= sessionStart && now <= sessionEnd
+
+          return (
+            <SessionCard
+              title={session.title}
+              startTime={format(sessionStart, 'h:mm a')}
+              endTime={format(sessionEnd, 'h:mm a')}
+              room={(session as any).room?.name}
+              track={track?.name}
+              trackColor={track?.color}
+              isLive={isLive}
+              isSaved={isSessionSaved(session.id)}
+              onPress={() => handleSessionPress(session.id)}
+              onSave={() => handleToggleSave(session.id)}
+            />
+          )
+        }}
       />
-    </YStack>
+    </ThemedBackground>
   )
 }
