@@ -94,13 +94,8 @@ export function DemoNav() {
   const { showDemoAlert } = useDemoMode()
 
   const handleNavClick = (e: React.MouseEvent, item: typeof navigation[0]) => {
-    // Allow Design Studio and Overview
-    if (item.href === '/demo' || item.href === '/demo/design') {
-      return
-    }
-    // Block other routes
-    e.preventDefault()
-    showDemoAlert()
+    // All demo routes are now available
+    return
   }
 
   return (
@@ -126,27 +121,20 @@ export function DemoNav() {
         </div>
         {navigation.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
-          const isDisabled = item.href !== '/demo' && item.href !== '/demo/design'
 
           return (
             <Link
               key={item.name}
               href={item.href}
-              onClick={(e) => handleNavClick(e, item)}
               className={cn(
                 'group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all',
                 isActive
                   ? 'bg-slate-900 text-white shadow-soft'
-                  : isDisabled
-                  ? 'cursor-not-allowed text-slate-400 opacity-50'
                   : 'text-slate-600 hover:bg-white/80 hover:text-slate-900',
                 item.highlight && !isActive && 'text-primary'
               )}
             >
-              <item.icon className={cn(
-                "h-5 w-5 transition-transform",
-                !isDisabled && "group-hover:-translate-y-0.5"
-              )} />
+              <item.icon className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
               {item.name}
               {item.highlight && !isActive && (
                 <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
