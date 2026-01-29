@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { DemoModeProvider } from '@/contexts/demo-mode-context';
-import { DemoNav } from '@/components/demo/demo-nav';
-import { DemoHeader } from '@/components/demo/demo-header';
+import { AppNav } from '@/components/shared/app-nav';
+import { AppHeader } from '@/components/shared/app-header';
 import { Sparkles, ArrowRight } from 'lucide-react';
 
 export default function DemoLayout({
@@ -29,15 +29,15 @@ export default function DemoLayout({
         </div>
 
         <div className="flex flex-1">
-          {/* Sidebar - same as dashboard */}
+          {/* Sidebar - unified with dashboard */}
           <div className="print:hidden">
-            <DemoNav />
+            <AppNav basePath="/demo" isDemo={true} />
           </div>
 
           {/* Main content */}
           <div className="flex flex-1 flex-col">
             <div className="print:hidden">
-              <DemoHeader />
+              <AppHeader isDemo={true} />
             </div>
             <main className="relative flex-1 overflow-y-auto bg-hero p-8 print:bg-white print:p-4">
               <div className="pointer-events-none absolute inset-0 bg-grid opacity-[0.35]" />
