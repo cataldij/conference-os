@@ -768,30 +768,52 @@ const FONT_OPTIONS = [
 ];
 
 function TypographyEditor({ typography, onFontChange }: TypographyEditorProps) {
+  // Include AI-generated fonts that might not be in our preset list
+  const currentFonts = [
+    typography.fontFamily.heading,
+    typography.fontFamily.body,
+    typography.fontFamily.mono,
+  ].filter(Boolean);
+
+  // Merge current fonts with options and sort alphabetically
+  const allFonts = [...new Set([...currentFonts, ...FONT_OPTIONS])].sort();
+
   return (
     <div className="space-y-8">
       <div className="grid gap-6 md:grid-cols-3">
-        {(['heading', 'body', 'mono'] as const).map((type) => (
-          <div key={type} className="space-y-3">
-            <label className="text-sm font-semibold capitalize">{type} Font</label>
-            <select
-              value={typography.fontFamily[type]}
-              onChange={(e) => onFontChange(type, e.target.value)}
-              className="w-full rounded-md border bg-background px-3 py-2"
-            >
-              {FONT_OPTIONS.map((font) => (
-                <option key={font} value={font}>{font}</option>
-              ))}
-            </select>
-            <div
-              className="rounded-lg border p-4"
-              style={{ fontFamily: typography.fontFamily[type] }}
-            >
-              <p className="text-2xl font-bold">Aa Bb Cc</p>
-              <p className="text-sm text-muted-foreground">The quick brown fox jumps</p>
+        {(['heading', 'body', 'mono'] as const).map((type) => {
+          const currentFont = typography.fontFamily[type];
+          const isAIGenerated = currentFont && !FONT_OPTIONS.includes(currentFont);
+
+          return (
+            <div key={type} className="space-y-3">
+              <label className="text-sm font-semibold capitalize">{type} Font</label>
+              <select
+                value={currentFont}
+                onChange={(e) => onFontChange(type, e.target.value)}
+                className="w-full rounded-md border bg-background px-3 py-2"
+              >
+                {isAIGenerated && (
+                  <option value={currentFont} className="font-medium text-primary">
+                    ✨ {currentFont} (AI Generated)
+                  </option>
+                )}
+                {allFonts.map((font) => (
+                  font !== currentFont || !isAIGenerated ? (
+                    <option key={font} value={font}>{font}</option>
+                  ) : null
+                ))}
+              </select>
+              <div
+                className="rounded-lg border p-4"
+                style={{ fontFamily: currentFont }}
+              >
+                <p className="text-2xl font-bold">Aa Bb Cc</p>
+                <p className="text-sm text-muted-foreground">The quick brown fox jumps</p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div>
