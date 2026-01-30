@@ -383,10 +383,10 @@ export default async function DashboardPage() {
                 Your most recently created conferences
               </p>
             </div>
-            <button className="inline-flex items-center gap-1 text-xs font-semibold text-slate-900">
+            <Link href="/conferences" className="inline-flex items-center gap-1 text-xs font-semibold text-slate-900 hover:text-primary">
               View all
               <ArrowUpRight className="h-3 w-3" />
-            </button>
+            </Link>
           </div>
           {data.conferences.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -414,10 +414,10 @@ export default async function DashboardPage() {
                       {new Date(conference.end_date).toLocaleDateString()}
                     </p>
                   </div>
-                  <button className="inline-flex items-center gap-1 text-xs font-semibold text-slate-900">
+                  <Link href={`/conferences/${conference.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-slate-900 hover:text-primary">
                     Open brief
                     <ArrowUpRight className="h-3 w-3" />
-                  </button>
+                  </Link>
                 </div>
               ))}
             </div>

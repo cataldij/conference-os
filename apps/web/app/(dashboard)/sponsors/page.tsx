@@ -224,7 +224,7 @@ export default async function SponsorsPage() {
                 >
                   <div>
                     <Link
-                      href={`/dashboard/sponsors/${sponsor.id}`}
+                      href={`/sponsors/${sponsor.id}`}
                       className="font-medium hover:underline"
                     >
                       {sponsor.name}
@@ -238,7 +238,7 @@ export default async function SponsorsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dashboard/sponsors/${sponsor.id}`}>
+                      <Link href={`/sponsors/${sponsor.id}`}>
                         View leads
                         <ArrowUpRight className="ml-2 h-4 w-4" />
                       </Link>

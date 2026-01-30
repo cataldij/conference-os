@@ -342,7 +342,7 @@ export default async function SessionsPage() {
 
                     <div className="flex gap-2">
                       <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/dashboard/sessions/${session.id}/edit`}>
+                        <Link href={`/sessions/${session.id}/edit`}>
                           <Edit className="h-4 w-4" />
                         </Link>
                       </Button>

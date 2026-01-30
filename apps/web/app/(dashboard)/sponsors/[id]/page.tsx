@@ -110,7 +110,7 @@ export default async function SponsorDetailPage({
             <Link href="/sponsors">Back to Sponsors</Link>
           </Button>
           <Button asChild>
-            <a href={`/dashboard/sponsors/${sponsor.id}/export`}>Export CSV</a>
+            <a href={`/sponsors/${sponsor.id}/export`}>Export CSV</a>
           </Button>
         </div>
       </div>

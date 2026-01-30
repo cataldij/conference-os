@@ -469,7 +469,7 @@ export default async function SpeakersPage({
                 {/* Actions */}
                 <div className="mt-4 flex items-center justify-end gap-2 border-t pt-4">
                   <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/dashboard/speakers/${speaker.id}/edit`}>
+                    <Link href={`/speakers/${speaker.id}/edit`}>
                       <Edit className="mr-1 h-3 w-3" />
                       Edit
                     </Link>
