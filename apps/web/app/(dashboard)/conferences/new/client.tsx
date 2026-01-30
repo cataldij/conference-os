@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { AIConferenceForm } from '@/components/conference/ai-conference-form'
 import { AlertCircle, Loader2 } from 'lucide-react'
-import type { FormState } from './page'
+import type { FormState } from './actions'
 
 interface NewConferenceClientProps {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>
