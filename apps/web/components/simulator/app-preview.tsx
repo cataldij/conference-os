@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { Smartphone, Monitor, RotateCcw } from 'lucide-react'
+import { ios } from '@conference-os/attendee-ui'
 import { IphoneSimulator } from './iphone-simulator'
-import { AttendeeAppShell } from './attendee-app-shell'
+import { AttendeeAppShell, DEFAULT_TABS } from './attendee-app-shell'
 import { AttendeeAppHome } from './attendee-app-home'
 
 interface NavigationModule {
@@ -18,14 +19,17 @@ interface PreviewConfig {
   eventName: string
   tagline?: string
   startDate?: string
+  endDate?: string
   venueName?: string
+  bannerUrl?: string | null
+  logoUrl?: string | null
   colors: {
     primary: string
-    background: string
-    surface: string
-    text: string
-    textMuted: string
-    border: string
+    background?: string
+    surface?: string
+    text?: string
+    textMuted?: string
+    border?: string
   }
   fontFamily?: string
   gradientHero?: string
@@ -38,19 +42,13 @@ interface AppPreviewProps {
 }
 
 type DeviceType = 'iphone' | 'desktop'
-type TabId = 'home' | 'agenda' | 'people' | 'map' | 'info'
-
-const DEFAULT_TABS = [
-  { id: 'home', label: 'Home', icon: 'Home' },
-  { id: 'agenda', label: 'Agenda', icon: 'Agenda' },
-  { id: 'people', label: 'People', icon: 'People' },
-  { id: 'map', label: 'Map', icon: 'Map' },
-  { id: 'info', label: 'Info', icon: 'Info' },
-]
+type TabId = 'home' | 'agenda' | 'speakers' | 'map' | 'profile'
 
 export function AppPreview({ config, className = '' }: AppPreviewProps) {
   const [device, setDevice] = useState<DeviceType>('iphone')
   const [activeTab, setActiveTab] = useState<TabId>('home')
+
+  const scale = 0.7
 
   const renderAppContent = () => {
     // For now, all tabs show home - can extend later
@@ -59,12 +57,14 @@ export function AppPreview({ config, className = '' }: AppPreviewProps) {
         eventName={config.eventName}
         tagline={config.tagline}
         startDate={config.startDate}
+        endDate={config.endDate}
         venueName={config.venueName}
-        colors={config.colors}
-        fontFamily={config.fontFamily}
-        gradientHero={config.gradientHero}
+        bannerUrl={config.bannerUrl}
+        logoUrl={config.logoUrl}
+        primaryColor={config.colors.primary}
         modules={config.modules}
         onModuleTap={(moduleId) => console.log('Module tapped:', moduleId)}
+        scale={scale}
       />
     )
   }
@@ -123,18 +123,19 @@ export function AppPreview({ config, className = '' }: AppPreviewProps) {
         {/* Device preview */}
         <div className="relative flex h-full items-center justify-center">
           {device === 'iphone' ? (
-            <IphoneSimulator>
+            <IphoneSimulator scale={scale}>
               <AttendeeAppShell
                 tabs={DEFAULT_TABS}
                 activeTabId={activeTab}
                 onTabChange={(id) => setActiveTab(id as TabId)}
-                colors={config.colors}
+                primaryColor={config.colors.primary}
+                scale={scale}
               >
                 {renderAppContent()}
               </AttendeeAppShell>
             </IphoneSimulator>
           ) : (
-            <DesktopPreview config={config} activeTab={activeTab} onTabChange={setActiveTab} />
+            <DesktopPreview config={config} activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab as TabId)} />
           )}
         </div>
 
@@ -158,6 +159,22 @@ function DesktopPreview({
   activeTab: string
   onTabChange: (tab: string) => void
 }) {
+  const colors = {
+    primary: config.colors.primary,
+    background: config.colors.background || ios.colors.systemBackground,
+    surface: config.colors.surface || ios.colors.secondarySystemBackground,
+    text: config.colors.text || ios.colors.label,
+    textMuted: config.colors.textMuted || ios.colors.secondaryLabel,
+    border: config.colors.border || ios.colors.separator,
+  }
+
+  const tabs = [
+    { id: 'home', label: 'Home' },
+    { id: 'agenda', label: 'Agenda' },
+    { id: 'speakers', label: 'Speakers' },
+    { id: 'map', label: 'Map' },
+  ]
+
   return (
     <div className="w-full max-w-[520px]">
       {/* Browser chrome */}
@@ -196,27 +213,27 @@ function DesktopPreview({
         className="overflow-hidden rounded-b-xl shadow-2xl"
         style={{
           height: '360px',
-          backgroundColor: config.colors.background,
+          backgroundColor: colors.background,
         }}
       >
         {/* Desktop navigation bar */}
         <div
           className="flex items-center justify-between border-b px-6 py-3"
           style={{
-            backgroundColor: config.colors.surface,
-            borderColor: config.colors.border,
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
           }}
         >
           <div className="flex items-center gap-3">
             <div
               className="flex h-8 w-8 items-center justify-center rounded-lg text-white text-sm font-bold"
-              style={{ backgroundColor: config.colors.primary }}
+              style={{ backgroundColor: colors.primary }}
             >
               {config.eventName.charAt(0)}
             </div>
             <span
               className="text-sm font-semibold"
-              style={{ color: config.colors.text }}
+              style={{ color: colors.text }}
             >
               {config.eventName}
             </span>
@@ -224,13 +241,13 @@ function DesktopPreview({
 
           {/* Desktop tabs */}
           <div className="flex items-center gap-1">
-            {DEFAULT_TABS.slice(0, 4).map((tab) => (
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
                 className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
                 style={{
-                  backgroundColor: activeTab === tab.id ? `${config.colors.primary}15` : 'transparent',
-                  color: activeTab === tab.id ? config.colors.primary : config.colors.textMuted,
+                  backgroundColor: activeTab === tab.id ? `${colors.primary}15` : 'transparent',
+                  color: activeTab === tab.id ? colors.primary : colors.textMuted,
                 }}
                 onClick={() => onTabChange(tab.id)}
               >
@@ -242,7 +259,7 @@ function DesktopPreview({
           {/* User avatar */}
           <div
             className="h-7 w-7 rounded-full"
-            style={{ backgroundColor: `${config.colors.primary}20` }}
+            style={{ backgroundColor: `${colors.primary}20` }}
           />
         </div>
 
@@ -252,7 +269,7 @@ function DesktopPreview({
           <div
             className="rounded-xl p-4 mb-4"
             style={{
-              background: config.gradientHero || config.colors.primary,
+              background: config.gradientHero || colors.primary,
             }}
           >
             <h2 className="text-lg font-bold text-white">
@@ -273,19 +290,19 @@ function DesktopPreview({
                   key={module.id}
                   className="rounded-xl p-3 cursor-pointer transition-shadow hover:shadow-md"
                   style={{
-                    backgroundColor: config.colors.surface,
-                    border: `1px solid ${config.colors.border}`,
+                    backgroundColor: colors.surface,
+                    border: `1px solid ${colors.border}`,
                   }}
                 >
                   <div
                     className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg"
-                    style={{ backgroundColor: `${config.colors.primary}15` }}
+                    style={{ backgroundColor: `${colors.primary}15` }}
                   >
-                    <span style={{ color: config.colors.primary }}>●</span>
+                    <span style={{ color: colors.primary }}>●</span>
                   </div>
                   <p
                     className="text-xs font-medium"
-                    style={{ color: config.colors.text }}
+                    style={{ color: colors.text }}
                   >
                     {module.name}
                   </p>

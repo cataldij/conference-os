@@ -1,5 +1,16 @@
 export { IphoneSimulator } from './iphone-simulator'
 export { AttendeeAppHome } from './attendee-app-home'
-export { AttendeeAppShell } from './attendee-app-shell'
-export { ModuleTile } from './module-tile'
+export { AttendeeAppShell, DEFAULT_TABS } from './attendee-app-shell'
 export { AppPreview } from './app-preview'
+
+// Re-export shared components from attendee-ui
+export {
+  ModuleTile,
+  ModuleGrid,
+  CompactModuleTile,
+  CompactModuleGrid,
+  HeroCard,
+  CompactHeroCard,
+  TabBar,
+  CompactTabBar,
+} from '@conference-os/attendee-ui'

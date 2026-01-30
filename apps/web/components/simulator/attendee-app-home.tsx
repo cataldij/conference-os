@@ -1,16 +1,11 @@
 'use client'
 
-import { Calendar, MapPin, ChevronRight } from 'lucide-react'
-import { ModuleTile } from './module-tile'
-
-interface AppColors {
-  primary: string
-  background: string
-  surface: string
-  text: string
-  textMuted: string
-  border: string
-}
+import { ChevronRight } from 'lucide-react'
+import {
+  ios,
+  CompactHeroCard,
+  CompactModuleGrid,
+} from '@conference-os/attendee-ui'
 
 interface NavigationModule {
   id: string
@@ -24,236 +19,275 @@ interface AttendeeAppHomeProps {
   eventName: string
   tagline?: string
   startDate?: string
+  endDate?: string
   venueName?: string
-  colors: AppColors
-  fontFamily?: string
-  gradientHero?: string
+  bannerUrl?: string | null
+  logoUrl?: string | null
+  primaryColor?: string
   modules: NavigationModule[]
   onModuleTap?: (moduleId: string) => void
+  scale?: number
 }
 
+/**
+ * Home screen for the attendee app
+ * Uses shared components from @conference-os/attendee-ui
+ */
 export function AttendeeAppHome({
   eventName,
   tagline,
   startDate,
+  endDate,
   venueName,
-  colors,
-  fontFamily = '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
-  gradientHero,
+  bannerUrl,
+  logoUrl,
+  primaryColor = ios.colors.systemBlue,
   modules,
   onModuleTap,
+  scale = 0.7,
 }: AttendeeAppHomeProps) {
-  const enabledModules = modules.filter(m => m.enabled).sort((a, b) => a.order - b.order)
-
-  // Format date to look iOS-native
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'Today'
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  // Map module IDs to the shared module config IDs
+  const moduleIdMap: Record<string, string> = {
+    schedule: 'agenda',
+    agenda: 'agenda',
+    speakers: 'speakers',
+    exhibitors: 'sponsors',
+    sponsors: 'sponsors',
+    maps: 'map',
+    map: 'map',
+    networking: 'networking',
+    chat: 'networking',
+    announcements: 'announcements',
+    notifications: 'announcements',
   }
+
+  const enabledModules = modules
+    .filter(m => m.enabled)
+    .sort((a, b) => a.order - b.order)
+    .map(m => moduleIdMap[m.id] || m.id)
+    .filter((id, index, arr) => arr.indexOf(id) === index) // Remove duplicates
+    .slice(0, 6)
 
   return (
     <div
       className="flex h-full flex-col"
       style={{
-        backgroundColor: colors.background,
-        fontFamily,
+        backgroundColor: ios.colors.secondarySystemBackground,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
       }}
     >
       {/* iOS-style overscroll bounce */}
       <div
         className="flex-1 overflow-y-auto overscroll-y-contain"
-        style={{
-          WebkitOverflowScrolling: 'touch',
-        }}
+        style={{ WebkitOverflowScrolling: 'touch' }}
       >
-        {/* Header with gradient */}
-        <div
-          className="relative px-5 pb-8 pt-4"
-          style={{
-            background: gradientHero || colors.primary,
-          }}
-        >
-          {/* Profile circle (fake) */}
-          <div className="flex justify-end mb-3">
-            <div
-              className="h-8 w-8 rounded-full"
-              style={{
-                background: 'rgba(255,255,255,0.2)',
-                border: '2px solid rgba(255,255,255,0.3)',
-              }}
-            />
-          </div>
-
-          {/* Event name */}
-          <h1
-            className="text-[22px] font-bold text-white leading-tight"
-            style={{ fontFamily }}
-          >
-            {eventName || 'Conference Name'}
-          </h1>
-
-          {tagline && (
-            <p className="mt-1 text-[13px] text-white/80 leading-snug">
-              {tagline}
-            </p>
-          )}
-
-          {/* Date and location pills */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            <div className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 backdrop-blur-sm">
-              <Calendar className="h-3.5 w-3.5 text-white/90" />
-              <span className="text-[12px] font-medium text-white">
-                {formatDate(startDate)}
-              </span>
-            </div>
-            {venueName && (
-              <div className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 backdrop-blur-sm">
-                <MapPin className="h-3.5 w-3.5 text-white/90" />
-                <span className="text-[12px] font-medium text-white">
-                  {venueName}
-                </span>
-              </div>
-            )}
-          </div>
+        {/* Hero Section */}
+        <div style={{ padding: 12 * scale, paddingTop: 8 * scale }}>
+          <CompactHeroCard
+            name={eventName}
+            tagline={tagline}
+            bannerUrl={bannerUrl}
+            logoUrl={logoUrl}
+            startDate={startDate}
+            endDate={endDate}
+            venueName={venueName}
+            primaryColor={primaryColor}
+            scale={scale}
+          />
         </div>
 
-        {/* Content area - overlaps header slightly for iOS feel */}
+        {/* Content Area */}
         <div
-          className="relative -mt-4 min-h-0 rounded-t-[24px] px-4 pt-5 pb-4"
           style={{
-            backgroundColor: colors.background,
+            padding: `0 ${12 * scale}px ${16 * scale}px`,
           }}
         >
-          {/* "Next Up" card - iOS grouped style */}
-          <div className="mb-5">
-            <p
-              className="mb-2.5 text-[13px] font-semibold uppercase tracking-wide"
-              style={{ color: colors.textMuted }}
-            >
-              Next Up
-            </p>
-            <div
-              className="rounded-[20px] p-4"
-              style={{
-                backgroundColor: colors.surface,
-                boxShadow: `
-                  0 1px 3px rgba(0,0,0,0.04),
-                  0 4px 12px rgba(0,0,0,0.04)
-                `,
-                border: `1px solid ${colors.border}`,
-              }}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p
-                    className="text-[11px] font-semibold uppercase tracking-wide"
-                    style={{ color: colors.primary }}
-                  >
-                    9:00 AM • Main Stage
-                  </p>
-                  <p
-                    className="mt-1 text-[15px] font-semibold leading-snug"
-                    style={{ color: colors.text }}
-                  >
-                    Opening Keynote
-                  </p>
-                  <p
-                    className="mt-0.5 text-[13px]"
-                    style={{ color: colors.textMuted }}
-                  >
-                    Dr. Sarah Chen
-                  </p>
-                </div>
-                <div
-                  className="flex h-10 w-10 items-center justify-center rounded-full"
-                  style={{ backgroundColor: `${colors.primary}15` }}
-                >
-                  <ChevronRight
-                    className="h-5 w-5"
-                    style={{ color: colors.primary }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Next Up Card */}
+          <SectionHeader label="Next Up" scale={scale} />
+          <NextUpCard primaryColor={primaryColor} scale={scale} />
 
-          {/* Module tiles grid */}
-          <div>
-            <p
-              className="mb-2.5 text-[13px] font-semibold uppercase tracking-wide"
-              style={{ color: colors.textMuted }}
-            >
-              Explore
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              {enabledModules.slice(0, 6).map((module) => (
-                <ModuleTile
-                  key={module.id}
-                  name={module.name}
-                  icon={module.icon}
-                  primaryColor={colors.primary}
-                  surfaceColor={colors.surface}
-                  textColor={colors.text}
-                  borderColor={colors.border}
-                  onTap={() => onModuleTap?.(module.id)}
-                />
-              ))}
-            </div>
-          </div>
+          {/* Module Grid */}
+          <SectionHeader label="Explore" scale={scale} style={{ marginTop: 16 * scale }} />
+          <CompactModuleGrid
+            modules={enabledModules}
+            onModulePress={onModuleTap}
+            columns={3}
+            scale={scale * 0.85}
+            gap={8}
+          />
 
-          {/* Quick stats - iOS grouped section */}
-          <div className="mt-5">
-            <p
-              className="mb-2.5 text-[13px] font-semibold uppercase tracking-wide"
-              style={{ color: colors.textMuted }}
-            >
-              At a Glance
-            </p>
-            <div
-              className="rounded-[20px] overflow-hidden"
-              style={{
-                backgroundColor: colors.surface,
-                boxShadow: `
-                  0 1px 3px rgba(0,0,0,0.04),
-                  0 4px 12px rgba(0,0,0,0.04)
-                `,
-                border: `1px solid ${colors.border}`,
-              }}
-            >
-              {[
-                { label: 'Sessions', value: '48', icon: '📅' },
-                { label: 'Speakers', value: '24', icon: '🎤' },
-                { label: 'Attendees', value: '500+', icon: '👥' },
-              ].map((stat, index, arr) => (
-                <div
-                  key={stat.label}
-                  className="flex items-center justify-between px-4 py-3"
-                  style={{
-                    borderBottom: index < arr.length - 1 ? `1px solid ${colors.border}` : 'none',
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-[18px]">{stat.icon}</span>
-                    <span
-                      className="text-[15px]"
-                      style={{ color: colors.text }}
-                    >
-                      {stat.label}
-                    </span>
-                  </div>
-                  <span
-                    className="text-[15px] font-semibold"
-                    style={{ color: colors.primary }}
-                  >
-                    {stat.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Quick Stats */}
+          <SectionHeader label="At a Glance" scale={scale} style={{ marginTop: 16 * scale }} />
+          <QuickStatsCard primaryColor={primaryColor} scale={scale} />
         </div>
       </div>
+    </div>
+  )
+}
+
+// Section Header Component
+function SectionHeader({
+  label,
+  scale = 0.7,
+  style,
+}: {
+  label: string
+  scale?: number
+  style?: React.CSSProperties
+}) {
+  return (
+    <p
+      style={{
+        fontSize: 11 * scale,
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5 * scale,
+        color: ios.colors.secondaryLabel,
+        marginBottom: 8 * scale,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
+        ...style,
+      }}
+    >
+      {label}
+    </p>
+  )
+}
+
+// Next Up Card Component
+function NextUpCard({
+  primaryColor,
+  scale = 0.7,
+}: {
+  primaryColor: string
+  scale?: number
+}) {
+  return (
+    <div
+      style={{
+        backgroundColor: ios.colors.systemBackground,
+        borderRadius: ios.radius.lg * scale,
+        padding: 12 * scale,
+        boxShadow: ios.shadow.card,
+      }}
+    >
+      <div className="flex items-center justify-between">
+        <div style={{ flex: 1 }}>
+          <p
+            style={{
+              fontSize: 9 * scale,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: 0.3 * scale,
+              color: primaryColor,
+              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
+            }}
+          >
+            9:00 AM • Main Stage
+          </p>
+          <p
+            style={{
+              fontSize: 13 * scale,
+              fontWeight: 600,
+              color: ios.colors.label,
+              marginTop: 2 * scale,
+              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
+            }}
+          >
+            Opening Keynote
+          </p>
+          <p
+            style={{
+              fontSize: 11 * scale,
+              color: ios.colors.secondaryLabel,
+              marginTop: 1 * scale,
+              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
+            }}
+          >
+            Dr. Sarah Chen
+          </p>
+        </div>
+        <div
+          style={{
+            width: 32 * scale,
+            height: 32 * scale,
+            borderRadius: 16 * scale,
+            backgroundColor: `${primaryColor}15`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <ChevronRight
+            size={16 * scale}
+            color={primaryColor}
+            strokeWidth={2.5}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Quick Stats Card Component
+function QuickStatsCard({
+  primaryColor,
+  scale = 0.7,
+}: {
+  primaryColor: string
+  scale?: number
+}) {
+  const stats = [
+    { label: 'Sessions', value: '48', emoji: '📅' },
+    { label: 'Speakers', value: '24', emoji: '🎤' },
+    { label: 'Attendees', value: '500+', emoji: '👥' },
+  ]
+
+  return (
+    <div
+      style={{
+        backgroundColor: ios.colors.systemBackground,
+        borderRadius: ios.radius.lg * scale,
+        overflow: 'hidden',
+        boxShadow: ios.shadow.card,
+      }}
+    >
+      {stats.map((stat, index) => (
+        <div
+          key={stat.label}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: `${10 * scale}px ${12 * scale}px`,
+            borderBottom: index < stats.length - 1
+              ? `0.5px solid ${ios.colors.separator}`
+              : 'none',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 * scale }}>
+            <span style={{ fontSize: 14 * scale }}>{stat.emoji}</span>
+            <span
+              style={{
+                fontSize: 12 * scale,
+                color: ios.colors.label,
+                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
+              }}
+            >
+              {stat.label}
+            </span>
+          </div>
+          <span
+            style={{
+              fontSize: 12 * scale,
+              fontWeight: 600,
+              color: primaryColor,
+              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
+            }}
+          >
+            {stat.value}
+          </span>
+        </div>
+      ))}
     </div>
   )
 }
