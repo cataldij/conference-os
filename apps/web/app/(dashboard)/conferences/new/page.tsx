@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Button } from '@/components/ui/button'
-import { AIConferenceForm } from '@/components/conference/ai-conference-form'
+import { NewConferenceClient } from './client'
 
 function slugify(input: string) {
   return input
@@ -12,7 +10,15 @@ function slugify(input: string) {
     .replace(/^-+|-+$/g, '')
 }
 
-async function createConferenceAction(formData: FormData) {
+export type FormState = {
+  error?: string
+  success?: boolean
+}
+
+async function createConferenceAction(
+  prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
   'use server'
 
   const supabase = await createClient()
@@ -30,7 +36,7 @@ async function createConferenceAction(formData: FormData) {
   const endDate = String(formData.get('end_date') || '').trim()
 
   if (!name || !startDate || !endDate) {
-    return
+    return { error: 'Please fill in all required fields (name, start date, end date)' }
   }
 
   const slug = slugInput ? slugify(slugInput) : slugify(name)
@@ -67,7 +73,7 @@ async function createConferenceAction(formData: FormData) {
 
   if (error) {
     console.error('Conference insert error:', error)
-    throw new Error(`Failed to create conference: ${error.message} (code: ${error.code})`)
+    return { error: `Failed to create conference: ${error.message}` }
   }
 
   console.log('Conference created with ID:', data.id)
@@ -85,7 +91,7 @@ async function createConferenceAction(formData: FormData) {
     console.error('Member insert error:', memberError)
     // If adding member fails, try to clean up the conference
     await supabase.from('conferences').delete().eq('id', data.id)
-    throw new Error(`Failed to add organizer: ${memberError.message} (code: ${memberError.code})`)
+    return { error: `Failed to add organizer: ${memberError.message}` }
   }
 
   console.log('User added as organizer, redirecting to conference page')
@@ -93,28 +99,5 @@ async function createConferenceAction(formData: FormData) {
 }
 
 export default function NewConferencePage() {
-  return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">New Conference</h1>
-          <p className="text-muted-foreground">
-            Create a new conference with AI-powered assistance
-          </p>
-        </div>
-        <Button variant="outline" asChild>
-          <Link href="/conferences">Back to Conferences</Link>
-        </Button>
-      </div>
-
-      <AIConferenceForm action={createConferenceAction}>
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" asChild>
-            <Link href="/conferences">Cancel</Link>
-          </Button>
-          <Button type="submit">Create Conference</Button>
-        </div>
-      </AIConferenceForm>
-    </div>
-  )
+  return <NewConferenceClient action={createConferenceAction} />
 }

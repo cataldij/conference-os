@@ -195,7 +195,7 @@ export function AIConferenceForm({
   action,
 }: {
   children: React.ReactNode
-  action: (formData: FormData) => Promise<void>
+  action: ((formData: FormData) => Promise<void>) | ((formData: FormData) => void)
 }) {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
