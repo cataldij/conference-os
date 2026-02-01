@@ -9,6 +9,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, Rea
 export interface ConferenceData {
   id?: string
   slug?: string
+  // Basic Info
   name: string
   tagline: string
   description: string
@@ -17,15 +18,57 @@ export interface ConferenceData {
   timezone: string
   venueName: string
   venueAddress: string
+  websiteUrl: string
+  // Branding Assets
   logoUrl: string | null
   bannerUrl: string | null
+  // Colors
   primaryColor: string
   secondaryColor: string
-  websiteUrl: string
+  accentColor: string
+  backgroundColor: string
+  textColor: string
+  headingColor: string
+  // Navigation Colors
+  navBackgroundColor: string
+  navTextColor: string
+  // Button Colors
+  buttonColor: string
+  buttonTextColor: string
+  registrationButtonText: string
+  // Typography
+  fontHeading: string
+  fontBody: string
+  // Hero Settings
+  heroHeight: 'small' | 'medium' | 'large' | 'full'
+  heroStyle: 'image' | 'video' | 'gradient'
+  heroBackgroundUrl: string | null
+  heroVideoUrl: string | null
+  heroOverlayOpacity: number
+  // Background Settings
+  backgroundPattern: 'none' | 'dots' | 'grid' | 'diagonal' | 'zigzag'
+  backgroundPatternColor: string
+  backgroundGradientStart: string
+  backgroundGradientEnd: string
+  backgroundImageUrl: string | null
+  backgroundImageOverlay: number
+  // Footer & Legal
+  footerText: string
+  privacyPolicyUrl: string
+  termsUrl: string
+  codeOfConductUrl: string
+  // Social Links
+  twitterUrl: string
+  linkedinUrl: string
+  instagramUrl: string
+  youtubeUrl: string
+  // Settings
   isPublic: boolean
   isHybrid: boolean
   registrationOpen: boolean
   maxAttendees: number | null
+  // Custom
+  customCss: string
 }
 
 export interface NavigationModule {
@@ -93,6 +136,7 @@ const DEFAULT_MODULES: NavigationModule[] = [
 ]
 
 const DEFAULT_CONFERENCE: ConferenceData = {
+  // Basic Info
   name: '',
   tagline: '',
   description: '',
@@ -101,15 +145,57 @@ const DEFAULT_CONFERENCE: ConferenceData = {
   timezone: 'America/New_York',
   venueName: '',
   venueAddress: '',
+  websiteUrl: '',
+  // Branding Assets
   logoUrl: null,
   bannerUrl: null,
+  // Colors
   primaryColor: '#2563eb',
   secondaryColor: '#8b5cf6',
-  websiteUrl: '',
+  accentColor: '#f59e0b',
+  backgroundColor: '#ffffff',
+  textColor: '#1f2937',
+  headingColor: '#111827',
+  // Navigation Colors
+  navBackgroundColor: '#ffffff',
+  navTextColor: '#374151',
+  // Button Colors
+  buttonColor: '#2563eb',
+  buttonTextColor: '#ffffff',
+  registrationButtonText: 'Register Now',
+  // Typography
+  fontHeading: 'Inter',
+  fontBody: 'Inter',
+  // Hero Settings
+  heroHeight: 'medium',
+  heroStyle: 'gradient',
+  heroBackgroundUrl: null,
+  heroVideoUrl: null,
+  heroOverlayOpacity: 0.3,
+  // Background Settings
+  backgroundPattern: 'none',
+  backgroundPatternColor: '#00000010',
+  backgroundGradientStart: '',
+  backgroundGradientEnd: '',
+  backgroundImageUrl: null,
+  backgroundImageOverlay: 0.5,
+  // Footer & Legal
+  footerText: '',
+  privacyPolicyUrl: '',
+  termsUrl: '',
+  codeOfConductUrl: '',
+  // Social Links
+  twitterUrl: '',
+  linkedinUrl: '',
+  instagramUrl: '',
+  youtubeUrl: '',
+  // Settings
   isPublic: true,
   isHybrid: false,
   registrationOpen: true,
   maxAttendees: null,
+  // Custom
+  customCss: '',
 }
 
 // =============================================

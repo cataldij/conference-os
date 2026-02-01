@@ -31,6 +31,7 @@ export function ConferenceEditorClient({
 
     // Map editor format back to database format
     const payload = {
+      // Basic Info
       name: conference.name,
       tagline: conference.tagline || null,
       description: conference.description || null,
@@ -39,15 +40,57 @@ export function ConferenceEditorClient({
       timezone: conference.timezone,
       venue_name: conference.venueName || null,
       venue_address: conference.venueAddress || null,
+      website_url: conference.websiteUrl || null,
+      // Branding Assets
       logo_url: conference.logoUrl,
       banner_url: conference.bannerUrl,
+      // Colors
       primary_color: conference.primaryColor,
       secondary_color: conference.secondaryColor,
-      website_url: conference.websiteUrl || null,
+      accent_color: conference.accentColor || null,
+      background_color: conference.backgroundColor || null,
+      text_color: conference.textColor || null,
+      heading_color: conference.headingColor || null,
+      // Navigation Colors
+      nav_background_color: conference.navBackgroundColor || null,
+      nav_text_color: conference.navTextColor || null,
+      // Button Colors
+      button_color: conference.buttonColor || null,
+      button_text_color: conference.buttonTextColor || null,
+      registration_button_text: conference.registrationButtonText || null,
+      // Typography
+      font_heading: conference.fontHeading || null,
+      font_body: conference.fontBody || null,
+      // Hero Settings
+      hero_height: conference.heroHeight || null,
+      hero_style: conference.heroStyle || null,
+      hero_background_url: conference.heroBackgroundUrl || null,
+      hero_video_url: conference.heroVideoUrl || null,
+      hero_overlay_opacity: conference.heroOverlayOpacity ?? 0.3,
+      // Background Settings
+      background_pattern: conference.backgroundPattern || null,
+      background_pattern_color: conference.backgroundPatternColor || null,
+      background_gradient_start: conference.backgroundGradientStart || null,
+      background_gradient_end: conference.backgroundGradientEnd || null,
+      background_image_url: conference.backgroundImageUrl || null,
+      background_image_overlay: conference.backgroundImageOverlay ?? 0.5,
+      // Footer & Legal
+      footer_text: conference.footerText || null,
+      privacy_policy_url: conference.privacyPolicyUrl || null,
+      terms_url: conference.termsUrl || null,
+      code_of_conduct_url: conference.codeOfConductUrl || null,
+      // Social Links
+      twitter_url: conference.twitterUrl || null,
+      linkedin_url: conference.linkedinUrl || null,
+      instagram_url: conference.instagramUrl || null,
+      youtube_url: conference.youtubeUrl || null,
+      // Settings
       is_public: conference.isPublic,
       is_hybrid: conference.isHybrid,
       registration_open: conference.registrationOpen,
       max_attendees: conference.maxAttendees,
+      // Custom
+      custom_css: conference.customCss || null,
     }
 
     const { error } = await supabase
