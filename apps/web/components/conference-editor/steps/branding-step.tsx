@@ -29,16 +29,57 @@ const COLOR_PRESETS = [
   { name: 'Corporate', primary: '#2563eb', secondary: '#7c3aed', accent: '#10b981' },
 ]
 
+// Comprehensive font list organized by category
 const FONT_OPTIONS = [
-  { value: 'Inter', label: 'Inter', style: 'font-sans' },
-  { value: 'Sora', label: 'Sora', style: 'font-sans' },
-  { value: 'Poppins', label: 'Poppins', style: 'font-sans' },
-  { value: 'Montserrat', label: 'Montserrat', style: 'font-sans' },
-  { value: 'Raleway', label: 'Raleway', style: 'font-sans' },
-  { value: 'Playfair Display', label: 'Playfair Display', style: 'font-serif' },
-  { value: 'Merriweather', label: 'Merriweather', style: 'font-serif' },
-  { value: 'Space Grotesk', label: 'Space Grotesk', style: 'font-mono' },
-  { value: 'JetBrains Mono', label: 'JetBrains Mono', style: 'font-mono' },
+  // Modern Sans-Serif - Clean & Contemporary
+  { value: 'Inter', label: 'Inter', category: 'Modern Sans' },
+  { value: 'Poppins', label: 'Poppins', category: 'Modern Sans' },
+  { value: 'DM Sans', label: 'DM Sans', category: 'Modern Sans' },
+  { value: 'Plus Jakarta Sans', label: 'Plus Jakarta Sans', category: 'Modern Sans' },
+  { value: 'Manrope', label: 'Manrope', category: 'Modern Sans' },
+  { value: 'Outfit', label: 'Outfit', category: 'Modern Sans' },
+  { value: 'Figtree', label: 'Figtree', category: 'Modern Sans' },
+  { value: 'Albert Sans', label: 'Albert Sans', category: 'Modern Sans' },
+
+  // Classic Sans-Serif - Timeless & Professional
+  { value: 'Roboto', label: 'Roboto', category: 'Classic Sans' },
+  { value: 'Open Sans', label: 'Open Sans', category: 'Classic Sans' },
+  { value: 'Lato', label: 'Lato', category: 'Classic Sans' },
+  { value: 'Montserrat', label: 'Montserrat', category: 'Classic Sans' },
+  { value: 'Raleway', label: 'Raleway', category: 'Classic Sans' },
+  { value: 'Nunito', label: 'Nunito', category: 'Classic Sans' },
+  { value: 'Source Sans 3', label: 'Source Sans 3', category: 'Classic Sans' },
+  { value: 'Work Sans', label: 'Work Sans', category: 'Classic Sans' },
+  { value: 'Rubik', label: 'Rubik', category: 'Classic Sans' },
+  { value: 'Quicksand', label: 'Quicksand', category: 'Classic Sans' },
+  { value: 'Karla', label: 'Karla', category: 'Classic Sans' },
+
+  // Display & Bold - Headlines & Impact
+  { value: 'Sora', label: 'Sora', category: 'Display' },
+  { value: 'Space Grotesk', label: 'Space Grotesk', category: 'Display' },
+  { value: 'Lexend', label: 'Lexend', category: 'Display' },
+  { value: 'Urbanist', label: 'Urbanist', category: 'Display' },
+  { value: 'Red Hat Display', label: 'Red Hat Display', category: 'Display' },
+  { value: 'Bebas Neue', label: 'Bebas Neue', category: 'Display' },
+  { value: 'Oswald', label: 'Oswald', category: 'Display' },
+  { value: 'Anton', label: 'Anton', category: 'Display' },
+  { value: 'Archivo', label: 'Archivo', category: 'Display' },
+
+  // Elegant Serif - Sophisticated & Editorial
+  { value: 'Playfair Display', label: 'Playfair Display', category: 'Serif' },
+  { value: 'Merriweather', label: 'Merriweather', category: 'Serif' },
+  { value: 'Lora', label: 'Lora', category: 'Serif' },
+  { value: 'Libre Baskerville', label: 'Libre Baskerville', category: 'Serif' },
+  { value: 'Cormorant Garamond', label: 'Cormorant Garamond', category: 'Serif' },
+  { value: 'Crimson Pro', label: 'Crimson Pro', category: 'Serif' },
+  { value: 'Source Serif 4', label: 'Source Serif 4', category: 'Serif' },
+  { value: 'DM Serif Display', label: 'DM Serif Display', category: 'Serif' },
+
+  // Monospace - Technical & Code
+  { value: 'JetBrains Mono', label: 'JetBrains Mono', category: 'Monospace' },
+  { value: 'Fira Code', label: 'Fira Code', category: 'Monospace' },
+  { value: 'Source Code Pro', label: 'Source Code Pro', category: 'Monospace' },
+  { value: 'IBM Plex Mono', label: 'IBM Plex Mono', category: 'Monospace' },
 ]
 
 const BACKGROUND_PATTERNS = [

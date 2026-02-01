@@ -9,17 +9,53 @@ import { DesktopWebsitePreview } from './desktop-website-preview'
 import { AttendeeAppShell, DEFAULT_TABS } from './attendee-app-shell'
 import { AttendeeAppHome } from './attendee-app-home'
 
-// Google Fonts loader
+// Google Fonts loader - comprehensive font map
 const FONT_MAP: Record<string, string> = {
+  // Modern Sans
   'Inter': 'Inter:wght@400;500;600;700',
-  'Sora': 'Sora:wght@400;500;600;700',
   'Poppins': 'Poppins:wght@400;500;600;700',
+  'DM Sans': 'DM+Sans:wght@400;500;600;700',
+  'Plus Jakarta Sans': 'Plus+Jakarta+Sans:wght@400;500;600;700',
+  'Manrope': 'Manrope:wght@400;500;600;700',
+  'Outfit': 'Outfit:wght@400;500;600;700',
+  'Figtree': 'Figtree:wght@400;500;600;700',
+  'Albert Sans': 'Albert+Sans:wght@400;500;600;700',
+  // Classic Sans
+  'Roboto': 'Roboto:wght@400;500;700',
+  'Open Sans': 'Open+Sans:wght@400;500;600;700',
+  'Lato': 'Lato:wght@400;700',
   'Montserrat': 'Montserrat:wght@400;500;600;700',
   'Raleway': 'Raleway:wght@400;500;600;700',
+  'Nunito': 'Nunito:wght@400;500;600;700',
+  'Source Sans 3': 'Source+Sans+3:wght@400;500;600;700',
+  'Work Sans': 'Work+Sans:wght@400;500;600;700',
+  'Rubik': 'Rubik:wght@400;500;600;700',
+  'Quicksand': 'Quicksand:wght@400;500;600;700',
+  'Karla': 'Karla:wght@400;500;600;700',
+  // Display
+  'Sora': 'Sora:wght@400;500;600;700',
+  'Space Grotesk': 'Space+Grotesk:wght@400;500;600;700',
+  'Lexend': 'Lexend:wght@400;500;600;700',
+  'Urbanist': 'Urbanist:wght@400;500;600;700',
+  'Red Hat Display': 'Red+Hat+Display:wght@400;500;600;700',
+  'Bebas Neue': 'Bebas+Neue',
+  'Oswald': 'Oswald:wght@400;500;600;700',
+  'Anton': 'Anton',
+  'Archivo': 'Archivo:wght@400;500;600;700',
+  // Serif
   'Playfair Display': 'Playfair+Display:wght@400;500;600;700',
   'Merriweather': 'Merriweather:wght@400;700',
-  'Space Grotesk': 'Space+Grotesk:wght@400;500;600;700',
+  'Lora': 'Lora:wght@400;500;600;700',
+  'Libre Baskerville': 'Libre+Baskerville:wght@400;700',
+  'Cormorant Garamond': 'Cormorant+Garamond:wght@400;500;600;700',
+  'Crimson Pro': 'Crimson+Pro:wght@400;500;600;700',
+  'Source Serif 4': 'Source+Serif+4:wght@400;500;600;700',
+  'DM Serif Display': 'DM+Serif+Display',
+  // Monospace
   'JetBrains Mono': 'JetBrains+Mono:wght@400;500;600;700',
+  'Fira Code': 'Fira+Code:wght@400;500;600;700',
+  'Source Code Pro': 'Source+Code+Pro:wght@400;500;600;700',
+  'IBM Plex Mono': 'IBM+Plex+Mono:wght@400;500;600;700',
 }
 
 function useGoogleFonts(headingFont?: string, bodyFont?: string) {
