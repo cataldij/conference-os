@@ -13,18 +13,27 @@ export function BuilderPreview() {
     eventName: overview.name || 'Conference Name',
     tagline: overview.tagline || 'Your tagline here',
     startDate: overview.startDate,
+    endDate: overview.endDate,
     venueName: overview.venueName,
+    logoUrl: overview.logoUrl,
+    bannerUrl: overview.bannerUrl,
     colors: {
       primary: tokens?.colors?.primary || '#2563eb',
+      secondary: tokens?.colors?.secondary || '#0f172a',
+      accent: tokens?.colors?.accent || '#f59e0b',
       background: tokens?.colors?.background || '#ffffff',
       surface: tokens?.colors?.surface || '#f8fafc',
       text: tokens?.colors?.text || '#0f172a',
       textMuted: tokens?.colors?.textMuted || '#64748b',
       border: tokens?.colors?.border || '#e2e8f0',
     },
-    fontFamily: tokens?.typography?.fontFamily?.heading,
+    fonts: {
+      heading: tokens?.typography?.fontFamily?.heading,
+      body: tokens?.typography?.fontFamily?.body,
+    },
     gradientHero: gradients?.hero,
     modules: navigation,
+    cardStyle: design.cardStyle,
   }
 
   return (

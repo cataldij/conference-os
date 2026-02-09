@@ -124,6 +124,11 @@ interface PreviewConfig {
     heading?: string
     body?: string
   }
+  cardStyle?: {
+    variant?: 'white' | 'tinted' | 'glass'
+    border?: 'none' | 'primary' | 'secondary' | 'accent'
+    iconStyle?: 'solid' | 'outline' | 'pill'
+  }
   hero?: {
     height?: 'small' | 'medium' | 'large' | 'full'
     style?: 'image' | 'video' | 'gradient'
@@ -223,19 +228,29 @@ export function AppPreview({ config, className = '' }: AppPreviewProps) {
                 primaryColor={config.colors.primary}
                 scale={scale}
               >
-                <AttendeeAppHome
-                  eventName={config.eventName}
-                  tagline={config.tagline}
-                  startDate={config.startDate}
-                  endDate={config.endDate}
-                  venueName={config.venueName}
-                  bannerUrl={config.bannerUrl}
-                  logoUrl={config.logoUrl}
-                  primaryColor={config.colors.primary}
-                  modules={config.modules}
-                  onModuleTap={(moduleId) => console.log('Module tapped:', moduleId)}
-                  scale={scale}
-                />
+              <AttendeeAppHome
+                eventName={config.eventName}
+                tagline={config.tagline}
+                startDate={config.startDate}
+                endDate={config.endDate}
+                venueName={config.venueName}
+                bannerUrl={config.bannerUrl}
+                logoUrl={config.logoUrl}
+                primaryColor={config.colors.primary}
+                secondaryColor={config.colors.secondary}
+                accentColor={config.colors.accent}
+                backgroundColor={config.colors.background}
+                surfaceColor={config.colors.surface}
+                textColor={config.colors.text}
+                textMutedColor={config.colors.textMuted}
+                borderColor={config.colors.border}
+                fontHeading={config.fonts?.heading}
+                fontBody={config.fonts?.body}
+                cardStyle={config.cardStyle}
+                modules={config.modules}
+                onModuleTap={(moduleId) => console.log('Module tapped:', moduleId)}
+                scale={scale}
+              />
               </AttendeeAppShell>
             </IphoneSimulator>
           ) : (

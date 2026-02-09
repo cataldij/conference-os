@@ -59,6 +59,11 @@ interface BuilderState {
       card: string
     }
     darkMode: Record<string, string> | null
+    cardStyle: {
+      variant: 'white' | 'tinted' | 'glass'
+      border: 'none' | 'primary' | 'secondary' | 'accent'
+      iconStyle: 'solid' | 'outline' | 'pill'
+    }
   }
   navigation: NavigationModule[]
   publish: {
@@ -82,6 +87,7 @@ interface BuilderContextValue {
   // Design
   updateDesignTokens: (tokens: DesignTokens) => void
   updateGradients: (gradients: BuilderState['design']['gradients']) => void
+  updateCardStyle: (cardStyle: BuilderState['design']['cardStyle']) => void
   // Navigation
   toggleModule: (moduleId: string) => void
   reorderModules: (modules: NavigationModule[]) => void
@@ -121,6 +127,11 @@ const DEFAULT_STATE: BuilderState = {
     tokens: DEMO_DESIGN_TOKENS as unknown as DesignTokens,
     gradients: DEMO_GRADIENTS,
     darkMode: null,
+    cardStyle: {
+      variant: 'white',
+      border: 'primary',
+      iconStyle: 'solid',
+    },
   },
   navigation: DEFAULT_MODULES,
   publish: {
@@ -172,6 +183,13 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
+  const updateCardStyle = useCallback((cardStyle: BuilderState['design']['cardStyle']) => {
+    setState(prev => ({
+      ...prev,
+      design: { ...prev.design, cardStyle },
+    }))
+  }, [])
+
   const toggleModule = useCallback((moduleId: string) => {
     setState(prev => ({
       ...prev,
@@ -211,6 +229,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     updateOverview,
     updateDesignTokens,
     updateGradients,
+    updateCardStyle,
     toggleModule,
     reorderModules,
     generateEventCode,

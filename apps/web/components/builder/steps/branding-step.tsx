@@ -43,7 +43,7 @@ const FONTS = [
 ]
 
 export function BrandingStep() {
-  const { state, updateDesignTokens, updateGradients } = useBuilder()
+  const { state, updateDesignTokens, updateGradients, updateCardStyle } = useBuilder()
   const { design } = state
 
   const [prompt, setPrompt] = useState('')
@@ -247,6 +247,60 @@ export function BrandingStep() {
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className="space-y-3 rounded-xl border bg-white/70 p-4">
+            <div>
+              <h3 className="text-sm font-semibold">Card Style</h3>
+              <p className="text-xs text-muted-foreground">
+                Controls how cards look in the app preview.
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Card Fill</label>
+                <select
+                  value={design.cardStyle.variant}
+                  onChange={(e) =>
+                    updateCardStyle({ ...design.cardStyle, variant: e.target.value as any })
+                  }
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="white">White</option>
+                  <option value="tinted">Tinted</option>
+                  <option value="glass">Glass</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Border Color</label>
+                <select
+                  value={design.cardStyle.border}
+                  onChange={(e) =>
+                    updateCardStyle({ ...design.cardStyle, border: e.target.value as any })
+                  }
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="none">None</option>
+                  <option value="primary">Primary</option>
+                  <option value="secondary">Secondary</option>
+                  <option value="accent">Accent</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Icon Style</label>
+                <select
+                  value={design.cardStyle.iconStyle}
+                  onChange={(e) =>
+                    updateCardStyle({ ...design.cardStyle, iconStyle: e.target.value as any })
+                  }
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="solid">Solid</option>
+                  <option value="outline">Outline</option>
+                  <option value="pill">Pill</option>
+                </select>
+              </div>
+            </div>
           </div>
         </TabsContent>
 
