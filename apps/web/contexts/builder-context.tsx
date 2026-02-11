@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react'
 import { DEMO_CONFERENCE, DEMO_DESIGN_TOKENS, DEMO_GRADIENTS } from '@/lib/demo-data'
 
 // =============================================
@@ -93,6 +93,7 @@ interface BuilderContextValue {
   reorderModules: (modules: NavigationModule[]) => void
   // Publish
   generateEventCode: () => void
+  hydrateFromServer: (data: Partial<BuilderState>) => void
 }
 
 // =============================================
@@ -218,6 +219,82 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
+  const hydrateFromServer = useCallback((data: Partial<BuilderState>) => {
+    setState(prev => ({
+      ...prev,
+      ...data,
+      overview: { ...prev.overview, ...(data.overview || {}) },
+      design: {
+        ...prev.design,
+        ...(data.design || {}),
+        tokens: data.design?.tokens || prev.design.tokens,
+        gradients: data.design?.gradients || prev.design.gradients,
+        cardStyle: data.design?.cardStyle || prev.design.cardStyle,
+        darkMode: data.design?.darkMode ?? prev.design.darkMode,
+      },
+      navigation: data.navigation || prev.navigation,
+    }))
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+    const load = async () => {
+      try {
+        const response = await fetch('/api/builder/state')
+        if (!response.ok) return
+        const data = await response.json()
+
+        if (!isMounted) return
+
+        const conference = data.conference
+        const tokens = data.designTokens
+        const baseTokens = tokens || {
+          ...DEFAULT_STATE.design.tokens,
+          colors: {
+            ...DEFAULT_STATE.design.tokens.colors,
+            primary: conference?.primary_color || DEFAULT_STATE.design.tokens.colors.primary,
+            secondary: conference?.secondary_color || DEFAULT_STATE.design.tokens.colors.secondary,
+            accent: conference?.accent_color || DEFAULT_STATE.design.tokens.colors.accent,
+            background: conference?.background_color || DEFAULT_STATE.design.tokens.colors.background,
+          },
+          typography: {
+            ...DEFAULT_STATE.design.tokens.typography,
+            fontFamily: {
+              ...DEFAULT_STATE.design.tokens.typography.fontFamily,
+              heading: conference?.font_heading || DEFAULT_STATE.design.tokens.typography.fontFamily.heading,
+              body: conference?.font_body || DEFAULT_STATE.design.tokens.typography.fontFamily.body,
+            },
+          },
+        }
+
+        hydrateFromServer({
+          overview: {
+            name: conference?.name || '',
+            tagline: conference?.tagline || '',
+            description: conference?.description || '',
+            startDate: conference?.start_date || '',
+            endDate: conference?.end_date || '',
+            venueName: conference?.venue_name || '',
+            venueAddress: conference?.venue_address || '',
+            logoUrl: conference?.logo_url || null,
+            bannerUrl: conference?.banner_url || null,
+          },
+          design: {
+            tokens: baseTokens,
+          },
+        })
+      } catch (error) {
+        console.error('Failed to load builder state:', error)
+      }
+    }
+
+    load()
+    return () => {
+      isMounted = false
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const value: BuilderContextValue = {
     state,
     currentStep: state.step,
@@ -233,6 +310,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
     toggleModule,
     reorderModules,
     generateEventCode,
+    hydrateFromServer,
   }
 
   return (
