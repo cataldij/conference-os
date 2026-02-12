@@ -334,6 +334,7 @@ export function CompactModuleTile({
 // Compact Grid for preview
 interface CompactModuleGridProps {
   modules?: string[]
+  moduleConfigs?: Record<string, ModuleConfig>
   onModulePress?: (moduleId: string) => void
   columns?: 2 | 3
   scale?: number
@@ -344,6 +345,7 @@ interface CompactModuleGridProps {
 
 export function CompactModuleGrid({
   modules = ['agenda', 'speakers', 'sponsors', 'map', 'networking', 'announcements'],
+  moduleConfigs: customModuleConfigs,
   onModulePress,
   columns = 3,
   scale = 0.7,
@@ -373,7 +375,7 @@ export function CompactModuleGrid({
       {enabledModules.map((moduleId) => (
         <CompactModuleTile
           key={moduleId}
-          module={moduleId}
+          module={customModuleConfigs?.[moduleId] || moduleId}
           scale={scale}
           onPress={() => onModulePress?.(moduleId)}
           iconStyle={iconStyle}

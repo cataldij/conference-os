@@ -30,6 +30,23 @@ export function EditorPreview() {
       button: conference.buttonColor || conference.primaryColor || '#2563eb',
       buttonText: conference.buttonTextColor || '#ffffff',
     },
+    cardStyle: {
+      variant: 'white',
+      border: 'primary',
+      iconStyle: 'solid',
+    },
+    iconTheme: conference.appIconTheme || 'solid',
+    appBackground: {
+      pattern: conference.appBackgroundPattern || null,
+      patternColor: conference.appBackgroundPatternColor || '#00000010',
+      gradientStart: conference.appBackgroundGradientStart || '',
+      gradientEnd: conference.appBackgroundGradientEnd || '',
+      imageUrl: conference.appBackgroundImageUrl || null,
+      imageOverlay: conference.appBackgroundImageOverlay ?? 0.5,
+    },
+    appButtonStyle: conference.appButtonStyle || 'solid',
+    appButtonColor: conference.appButtonColor || conference.primaryColor || '#2563eb',
+    appButtonTextColor: conference.appButtonTextColor || '#ffffff',
     fonts: {
       heading: conference.fontHeading || 'Inter',
       body: conference.fontBody || 'Inter',

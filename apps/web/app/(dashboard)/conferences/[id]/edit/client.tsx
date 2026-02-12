@@ -102,7 +102,62 @@ export function ConferenceEditorClient({
       throw new Error(error.message)
     }
 
-    // TODO: Save modules to a separate table if needed
+    const { data: existingToken } = await supabase
+      .from('design_tokens')
+      .select('id, tokens')
+      .eq('conference_id', conferenceId)
+      .eq('is_active', true)
+      .maybeSingle()
+
+    const existingTokens = existingToken?.tokens || {}
+    const tokens = {
+      ...existingTokens,
+      colors: {
+        ...(existingTokens.colors || {}),
+        primary: conference.primaryColor,
+        secondary: conference.secondaryColor,
+        accent: conference.accentColor,
+        background: conference.backgroundColor,
+        text: conference.textColor,
+      },
+      typography: {
+        ...(existingTokens.typography || {}),
+        fontFamily: {
+          ...(existingTokens.typography?.fontFamily || {}),
+          heading: conference.fontHeading,
+          body: conference.fontBody,
+        },
+      },
+      app: {
+        ...(existingTokens.app || {}),
+        iconTheme: conference.appIconTheme,
+        appButtonStyle: conference.appButtonStyle,
+        appButtonColor: conference.appButtonColor,
+        appButtonTextColor: conference.appButtonTextColor,
+        backgroundPattern: conference.appBackgroundPattern,
+        backgroundPatternColor: conference.appBackgroundPatternColor,
+        backgroundGradientStart: conference.appBackgroundGradientStart,
+        backgroundGradientEnd: conference.appBackgroundGradientEnd,
+        backgroundImageUrl: conference.appBackgroundImageUrl,
+        backgroundImageOverlay: conference.appBackgroundImageOverlay,
+        modules: data.modules,
+      },
+    }
+
+    if (existingToken?.id) {
+      await supabase
+        .from('design_tokens')
+        .update({ tokens, updated_at: new Date().toISOString() })
+        .eq('id', existingToken.id)
+    } else {
+      await supabase
+        .from('design_tokens')
+        .insert({
+          conference_id: conferenceId,
+          tokens,
+          is_active: true,
+        })
+    }
   }
 
   const handlePublish = async (data: {

@@ -22,7 +22,14 @@ async function getConference(id: string) {
     redirect('/conferences')
   }
 
-  return { conference, userId: user.id }
+  const { data: designTokens } = await supabase
+    .from('design_tokens')
+    .select('tokens')
+    .eq('conference_id', id)
+    .eq('is_active', true)
+    .maybeSingle()
+
+  return { conference, designTokens: designTokens?.tokens || null, userId: user.id }
 }
 
 export default async function ConferenceEditPage({
@@ -30,7 +37,8 @@ export default async function ConferenceEditPage({
 }: {
   params: { id: string }
 }) {
-  const { conference } = await getConference(params.id)
+  const { conference, designTokens } = await getConference(params.id)
+  const appTokens = designTokens?.app || {}
 
   // Map database conference to editor format
   const initialConference = {
@@ -63,6 +71,10 @@ export default async function ConferenceEditPage({
     buttonColor: conference.button_color || conference.primary_color || '#2563eb',
     buttonTextColor: conference.button_text_color || '#ffffff',
     registrationButtonText: conference.registration_button_text || 'Register Now',
+    // App Button Styles
+    appButtonStyle: appTokens.appButtonStyle || 'solid',
+    appButtonColor: appTokens.appButtonColor || conference.primary_color || '#2563eb',
+    appButtonTextColor: appTokens.appButtonTextColor || '#ffffff',
     // Typography
     fontHeading: conference.font_heading || 'Inter',
     fontBody: conference.font_body || 'Inter',
@@ -79,6 +91,15 @@ export default async function ConferenceEditPage({
     backgroundGradientEnd: conference.background_gradient_end || '',
     backgroundImageUrl: conference.background_image_url || null,
     backgroundImageOverlay: conference.background_image_overlay ?? 0.5,
+    // App Background Settings
+    appBackgroundPattern: appTokens.backgroundPattern || null,
+    appBackgroundPatternColor: appTokens.backgroundPatternColor || '#00000010',
+    appBackgroundGradientStart: appTokens.backgroundGradientStart || '',
+    appBackgroundGradientEnd: appTokens.backgroundGradientEnd || '',
+    appBackgroundImageUrl: appTokens.backgroundImageUrl || null,
+    appBackgroundImageOverlay: appTokens.backgroundImageOverlay ?? 0.5,
+    // App Icon Theme
+    appIconTheme: appTokens.iconTheme || 'solid',
     // Footer & Legal
     footerText: conference.footer_text || '',
     privacyPolicyUrl: conference.privacy_policy_url || '',

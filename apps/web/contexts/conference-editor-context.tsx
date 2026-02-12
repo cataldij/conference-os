@@ -36,6 +36,10 @@ export interface ConferenceData {
   buttonColor: string
   buttonTextColor: string
   registrationButtonText: string
+  // App Button Styles
+  appButtonStyle: 'solid' | 'outline' | 'soft'
+  appButtonColor: string
+  appButtonTextColor: string
   // Typography
   fontHeading: string
   fontBody: string
@@ -52,6 +56,15 @@ export interface ConferenceData {
   backgroundGradientEnd: string
   backgroundImageUrl: string | null
   backgroundImageOverlay: number
+  // App Background Settings
+  appBackgroundPattern: string | null
+  appBackgroundPatternColor: string
+  appBackgroundGradientStart: string
+  appBackgroundGradientEnd: string
+  appBackgroundImageUrl: string | null
+  appBackgroundImageOverlay: number
+  // App Icon Theme
+  appIconTheme: 'solid' | 'outline' | 'duotone' | 'glass'
   // Footer & Legal
   footerText: string
   privacyPolicyUrl: string
@@ -111,6 +124,7 @@ interface EditorContextValue {
   updateConference: (updates: Partial<ConferenceData>) => void
   toggleModule: (moduleId: string) => void
   reorderModules: (modules: NavigationModule[]) => void
+  updateModule: (moduleId: string, updates: Partial<NavigationModule>) => void
   // Persistence
   save: () => Promise<void>
   publish: () => Promise<void>
@@ -163,6 +177,10 @@ const DEFAULT_CONFERENCE: ConferenceData = {
   buttonColor: '#2563eb',
   buttonTextColor: '#ffffff',
   registrationButtonText: 'Register Now',
+  // App Button Styles
+  appButtonStyle: 'solid',
+  appButtonColor: '#2563eb',
+  appButtonTextColor: '#ffffff',
   // Typography
   fontHeading: 'Inter',
   fontBody: 'Inter',
@@ -179,6 +197,15 @@ const DEFAULT_CONFERENCE: ConferenceData = {
   backgroundGradientEnd: '',
   backgroundImageUrl: null,
   backgroundImageOverlay: 0.5,
+  // App Background Settings
+  appBackgroundPattern: null,
+  appBackgroundPatternColor: '#00000010',
+  appBackgroundGradientStart: '',
+  appBackgroundGradientEnd: '',
+  appBackgroundImageUrl: null,
+  appBackgroundImageOverlay: 0.5,
+  // App Icon Theme
+  appIconTheme: 'solid',
   // Footer & Legal
   footerText: '',
   privacyPolicyUrl: '',
@@ -291,6 +318,14 @@ export function ConferenceEditorProvider({
     }))
   }, [])
 
+  const updateModule = useCallback((moduleId: string, updates: Partial<NavigationModule>) => {
+    setState(prev => ({
+      ...prev,
+      modules: prev.modules.map(m => (m.id === moduleId ? { ...m, ...updates } : m)),
+      isDirty: true,
+    }))
+  }, [])
+
   // Persistence
   const save = useCallback(async () => {
     if (!onSave) return
@@ -330,6 +365,7 @@ export function ConferenceEditorProvider({
     updateConference,
     toggleModule,
     reorderModules,
+    updateModule,
     save,
     publish,
     isDirty: state.isDirty,

@@ -1,10 +1,22 @@
 ﻿'use client'
 
-import { ChevronRight } from 'lucide-react'
+import {
+  ChevronRight,
+  Home,
+  Calendar,
+  Users,
+  Building2,
+  MessageCircle,
+  Map,
+  Bell,
+  User,
+} from 'lucide-react'
 import {
   ios,
   CompactHeroCard,
   CompactModuleGrid,
+  moduleConfigs,
+  type ModuleConfig,
 } from '@conference-os/attendee-ui'
 
 interface NavigationModule {
@@ -39,6 +51,9 @@ interface AttendeeAppHomeProps {
     iconStyle?: 'solid' | 'outline' | 'pill'
   }
   iconTheme?: 'solid' | 'outline' | 'duotone' | 'glass'
+  appButtonStyle?: 'solid' | 'outline' | 'soft'
+  appButtonColor?: string
+  appButtonTextColor?: string
   appBackground?: {
     pattern?: string | null
     patternColor?: string | null
@@ -80,6 +95,9 @@ export function AttendeeAppHome({
     iconStyle: 'solid',
   },
   iconTheme = 'solid',
+  appButtonStyle = 'solid',
+  appButtonColor = ios.colors.systemBlue,
+  appButtonTextColor = '#ffffff',
   appBackground,
   modules,
   onModuleTap,
@@ -106,6 +124,30 @@ export function AttendeeAppHome({
     .map(m => moduleIdMap[m.id] || m.id)
     .filter((id, index, arr) => arr.indexOf(id) === index) // Remove duplicates
     .slice(0, 6)
+
+  const ICONS = {
+    Home,
+    Calendar,
+    Users,
+    Building2,
+    MessageCircle,
+    Map,
+    Bell,
+    User,
+  }
+
+  const customModuleConfigs: Record<string, ModuleConfig> = {}
+  modules.forEach((module) => {
+    const moduleId = moduleIdMap[module.id] || module.id
+    const base = moduleConfigs[moduleId]
+    if (!base) return
+    const iconComponent = ICONS[module.icon as keyof typeof ICONS] || base.icon
+    customModuleConfigs[moduleId] = {
+      ...base,
+      label: module.name || base.label,
+      icon: iconComponent,
+    }
+  })
 
   const backgroundStyle: React.CSSProperties = {
     backgroundColor,
@@ -166,6 +208,32 @@ export function AttendeeAppHome({
             primaryColor={primaryColor}
             scale={scale}
           />
+          <button
+            style={{
+              width: '100%',
+              marginTop: 10 * scale,
+              padding: `${10 * scale}px ${12 * scale}px`,
+              borderRadius: 12 * scale,
+              border: appButtonStyle === 'outline' ? `1px solid ${appButtonColor}` : 'none',
+              background:
+                appButtonStyle === 'outline'
+                  ? 'transparent'
+                  : appButtonStyle === 'soft'
+                    ? `${appButtonColor}22`
+                    : appButtonColor,
+              color: appButtonStyle === 'outline' || appButtonStyle === 'soft'
+                ? appButtonColor
+                : appButtonTextColor,
+              fontSize: 12 * scale,
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: appButtonStyle === 'solid'
+                ? `0 ${2 * scale}px ${6 * scale}px rgba(0,0,0,0.1)`
+                : 'none',
+            }}
+          >
+            View Schedule
+          </button>
         </div>
 
         {/* Content Area */}
@@ -210,6 +278,7 @@ export function AttendeeAppHome({
             scale={scale * 0.85}
             gap={8}
             iconStyle={iconTheme}
+            moduleConfigs={customModuleConfigs}
           />
 
           {/* Quick Stats */}

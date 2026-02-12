@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Slider } from '@/components/ui/slider'
+import { BackgroundPicker } from '@/components/conference/background-picker'
 import {
   Palette,
   Sparkles,
@@ -441,6 +442,40 @@ export function BrandingStep() {
             </div>
           </div>
 
+          <div className="space-y-4">
+            <Label className="text-sm font-semibold">App Buttons</Label>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label className="text-xs">Style</Label>
+                <select
+                  value={conference.appButtonStyle}
+                  onChange={(e) => updateConference({ appButtonStyle: e.target.value as any })}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                >
+                  <option value="solid">Solid</option>
+                  <option value="outline">Outline</option>
+                  <option value="soft">Soft</option>
+                </select>
+              </div>
+              <ColorPicker label="App Button Color" field="appButtonColor" value={conference.appButtonColor} />
+              <ColorPicker label="App Button Text" field="appButtonTextColor" value={conference.appButtonTextColor} />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <Label className="text-sm font-semibold">App Icon Theme</Label>
+            <select
+              value={conference.appIconTheme}
+              onChange={(e) => updateConference({ appIconTheme: e.target.value as any })}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+            >
+              <option value="solid">Solid</option>
+              <option value="outline">Outline</option>
+              <option value="duotone">Duotone</option>
+              <option value="glass">Glass</option>
+            </select>
+          </div>
+
           {/* Preview */}
           <div className="space-y-3">
             <Label>Preview</Label>
@@ -715,6 +750,43 @@ export function BrandingStep() {
               />
             </div>
           )}
+
+          <div className="space-y-4 pt-4 border-t border-slate-200/60">
+            <Label className="text-sm font-semibold">App Background</Label>
+            <BackgroundPicker
+              backgroundUrl={conference.appBackgroundImageUrl}
+              backgroundPattern={conference.appBackgroundPattern}
+              gradientStart={conference.appBackgroundGradientStart}
+              gradientEnd={conference.appBackgroundGradientEnd}
+              patternColor={conference.appBackgroundPatternColor}
+              onBackgroundUrlChange={(url) => updateConference({ appBackgroundImageUrl: url })}
+              onPatternChange={(pattern) => updateConference({ appBackgroundPattern: pattern })}
+              onGradientChange={(start, end) =>
+                updateConference({
+                  appBackgroundGradientStart: start || '',
+                  appBackgroundGradientEnd: end || '',
+                })
+              }
+              onPatternColorChange={(color) => updateConference({ appBackgroundPatternColor: color })}
+              conferenceId={conference.id || 'app-preview'}
+            />
+            {conference.appBackgroundImageUrl && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>App Image Overlay</Label>
+                  <span className="text-sm text-slate-500">{Math.round(conference.appBackgroundImageOverlay * 100)}%</span>
+                </div>
+                <Slider
+                  value={[conference.appBackgroundImageOverlay]}
+                  onValueChange={([value]) => updateConference({ appBackgroundImageOverlay: value })}
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  className="w-full"
+                />
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         {/* Advanced Tab */}

@@ -136,6 +136,9 @@ interface PreviewConfig {
     iconStyle?: 'solid' | 'outline' | 'pill'
   }
   iconTheme?: 'solid' | 'outline' | 'duotone' | 'glass'
+  appButtonStyle?: 'solid' | 'outline' | 'soft'
+  appButtonColor?: string
+  appButtonTextColor?: string
   appBackground?: {
     pattern?: string | null
     patternColor?: string | null
@@ -207,6 +210,9 @@ export function AppPreview({ config, className = '' }: AppPreviewProps) {
       fontBody: config.fonts?.body,
       cardStyle: config.cardStyle,
       iconTheme: config.iconTheme,
+      appButtonStyle: config.appButtonStyle,
+      appButtonColor: config.appButtonColor,
+      appButtonTextColor: config.appButtonTextColor,
       appBackground: config.appBackground,
       scale,
     }
@@ -237,6 +243,9 @@ export function AppPreview({ config, className = '' }: AppPreviewProps) {
         fontBody={config.fonts?.body}
         cardStyle={config.cardStyle}
         iconTheme={config.iconTheme}
+        appButtonStyle={config.appButtonStyle}
+        appButtonColor={config.appButtonColor}
+        appButtonTextColor={config.appButtonTextColor}
         appBackground={config.appBackground}
         modules={config.modules}
         onModuleTap={handleModuleTap}

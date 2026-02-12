@@ -44,6 +44,7 @@ const ICONS: Record<string, typeof Home> = {
   Bell,
   User,
 }
+const ICON_OPTIONS = Object.keys(ICONS)
 
 interface SortableModuleProps {
   id: string
@@ -51,9 +52,10 @@ interface SortableModuleProps {
   icon: string
   enabled: boolean
   onToggle: () => void
+  onIconChange: (icon: string) => void
 }
 
-function SortableModule({ id, name, icon, enabled, onToggle }: SortableModuleProps) {
+function SortableModule({ id, name, icon, enabled, onToggle, onIconChange }: SortableModuleProps) {
   const {
     attributes,
     listeners,
@@ -108,6 +110,16 @@ function SortableModule({ id, name, icon, enabled, onToggle }: SortableModulePro
         </span>
       </div>
 
+      <select
+        value={icon}
+        onChange={(e) => onIconChange(e.target.value)}
+        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700"
+      >
+        {ICON_OPTIONS.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+
       <Switch
         checked={enabled}
         onCheckedChange={onToggle}
@@ -117,7 +129,7 @@ function SortableModule({ id, name, icon, enabled, onToggle }: SortableModulePro
 }
 
 export function FeaturesStep() {
-  const { state, toggleModule, reorderModules } = useConferenceEditor()
+  const { state, toggleModule, reorderModules, updateModule } = useConferenceEditor()
   const { modules } = state
 
   const sensors = useSensors(
@@ -181,6 +193,7 @@ export function FeaturesStep() {
                 icon={module.icon}
                 enabled={module.enabled}
                 onToggle={() => toggleModule(module.id)}
+                onIconChange={(icon) => updateModule(module.id, { icon })}
               />
             ))}
           </div>

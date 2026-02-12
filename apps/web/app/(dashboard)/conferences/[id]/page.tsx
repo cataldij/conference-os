@@ -80,7 +80,7 @@ export default async function ConferenceDetailPage({
 
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link href={`/c/${conference.slug}`} target="_blank">
+            <Link href={`/preview?conferenceId=${conference.id}`} target="_blank">
               <Eye className="mr-2 h-4 w-4" />
               Preview
             </Link>

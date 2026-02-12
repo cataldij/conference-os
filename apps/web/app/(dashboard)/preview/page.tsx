@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -74,6 +75,8 @@ export default function PreviewPage() {
   const [designTokens, setDesignTokens] = useState<any | null>(null)
 
   const supabase = createClientComponentClient()
+  const searchParams = useSearchParams()
+  const conferenceId = searchParams.get('conferenceId')
 
   useEffect(() => {
     async function loadData() {
@@ -81,12 +84,14 @@ export default function PreviewPage() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
-        const { data: conferences } = await supabase
+        const conferenceQuery = supabase
           .from('conferences')
           .select('*')
           .eq('created_by', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
+
+        const { data: conferences } = conferenceId
+          ? await conferenceQuery.eq('id', conferenceId).limit(1)
+          : await conferenceQuery.order('created_at', { ascending: false }).limit(1)
 
         if (conferences && conferences.length > 0) {
           const activeConference = conferences[0]
@@ -109,7 +114,7 @@ export default function PreviewPage() {
     }
 
     loadData()
-  }, [supabase])
+  }, [supabase, conferenceId])
 
   const handleDeviceChange = (newDevice: DeviceType) => {
     if (newDevice !== device) {
@@ -141,6 +146,10 @@ export default function PreviewPage() {
     iconStyle: 'solid',
   }
   const iconTheme = appTokens.iconTheme || 'solid'
+  const appButtonStyle = appTokens.appButtonStyle || 'solid'
+  const appButtonColor = appTokens.appButtonColor || primaryColor
+  const appButtonTextColor = appTokens.appButtonTextColor || '#ffffff'
+  const appModules = (appTokens.modules as NavigationModule[]) || DEFAULT_MODULES
   const appBackground = {
     pattern: appTokens.backgroundPattern || null,
     patternColor: appTokens.backgroundPatternColor || null,
@@ -475,8 +484,11 @@ export default function PreviewPage() {
                         fontBody={fontBody}
                         cardStyle={cardStyle}
                         iconTheme={iconTheme}
+                        appButtonStyle={appButtonStyle}
+                        appButtonColor={appButtonColor}
+                        appButtonTextColor={appButtonTextColor}
                         appBackground={appBackground}
-                        modules={DEFAULT_MODULES}
+                        modules={appModules}
                         onModuleTap={(moduleId) => console.log('Module tapped:', moduleId)}
                         scale={0.75}
                       />
@@ -507,6 +519,9 @@ export default function PreviewPage() {
                       textColor={textColor}
                       navBackgroundColor={conference.nav_background_color || undefined}
                       navTextColor={conference.nav_text_color || undefined}
+                      buttonColor={conference.button_color || undefined}
+                      buttonTextColor={conference.button_text_color || undefined}
+                      registrationButtonText={conference.registration_button_text || undefined}
                       fontHeading={fontHeading}
                       fontBody={fontBody}
                       heroStyle={conference.hero_style || undefined}
@@ -552,6 +567,9 @@ export default function PreviewPage() {
                       textColor={textColor}
                       navBackgroundColor={conference.nav_background_color || undefined}
                       navTextColor={conference.nav_text_color || undefined}
+                      buttonColor={conference.button_color || undefined}
+                      buttonTextColor={conference.button_text_color || undefined}
+                      registrationButtonText={conference.registration_button_text || undefined}
                       fontHeading={fontHeading}
                       fontBody={fontBody}
                       heroStyle={conference.hero_style || undefined}
