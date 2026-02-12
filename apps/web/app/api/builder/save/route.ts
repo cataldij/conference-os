@@ -66,6 +66,7 @@ export async function POST(req: Request) {
     ...(design.tokens || {}),
     app: {
       ...(design.tokens?.app || {}),
+      cardStyle: design.cardStyle || null,
       iconTheme: design.iconTheme || 'solid',
       backgroundPattern: body?.app?.backgroundPattern || null,
       backgroundPatternColor: body?.app?.backgroundPatternColor || null,

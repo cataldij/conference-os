@@ -370,6 +370,7 @@ export function BuilderProvider({ children }: { children: ReactNode }) {
           design: {
             tokens: baseTokens,
             iconTheme: (tokens?.app?.iconTheme as BuilderState['design']['iconTheme']) || 'solid',
+            cardStyle: (tokens?.app?.cardStyle as BuilderState['design']['cardStyle']) || DEFAULT_STATE.design.cardStyle,
           },
           web: {
             navBackgroundColor: conference?.nav_background_color || '#ffffff',

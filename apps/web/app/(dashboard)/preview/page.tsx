@@ -71,6 +71,7 @@ export default function PreviewPage() {
   const [isAnimating, setIsAnimating] = useState(false)
   const [loading, setLoading] = useState(true)
   const [conference, setConference] = useState<Conference | null>(null)
+  const [designTokens, setDesignTokens] = useState<any | null>(null)
 
   const supabase = createClientComponentClient()
 
@@ -88,7 +89,17 @@ export default function PreviewPage() {
           .limit(1)
 
         if (conferences && conferences.length > 0) {
-          setConference(conferences[0])
+          const activeConference = conferences[0]
+          setConference(activeConference)
+
+          const { data: tokenRow } = await supabase
+            .from('design_tokens')
+            .select('tokens')
+            .eq('conference_id', activeConference.id)
+            .eq('is_active', true)
+            .maybeSingle()
+
+          setDesignTokens(tokenRow?.tokens ?? null)
         }
       } catch (error) {
         console.error('Error loading preview data:', error)
@@ -110,8 +121,34 @@ export default function PreviewPage() {
     }
   }
 
-  const primaryColor = conference?.primary_color || '#6366f1'
-  const secondaryColor = conference?.secondary_color || '#8b5cf6'
+  const tokenColors = designTokens?.colors || {}
+  const tokenFonts = designTokens?.typography?.fontFamily || {}
+  const appTokens = designTokens?.app || {}
+
+  const primaryColor = tokenColors.primary || conference?.primary_color || '#6366f1'
+  const secondaryColor = tokenColors.secondary || conference?.secondary_color || '#8b5cf6'
+  const accentColor = tokenColors.accent || '#f59e0b'
+  const backgroundColor = tokenColors.background || '#ffffff'
+  const surfaceColor = tokenColors.surface || '#f8fafc'
+  const textColor = tokenColors.text || '#0f172a'
+  const textMutedColor = tokenColors.textMuted || '#64748b'
+  const borderColor = tokenColors.border || '#e2e8f0'
+  const fontHeading = tokenFonts.heading || conference?.font_heading
+  const fontBody = tokenFonts.body || conference?.font_body
+  const cardStyle = appTokens.cardStyle || {
+    variant: 'white',
+    border: 'primary',
+    iconStyle: 'solid',
+  }
+  const iconTheme = appTokens.iconTheme || 'solid'
+  const appBackground = {
+    pattern: appTokens.backgroundPattern || null,
+    patternColor: appTokens.backgroundPatternColor || null,
+    gradientStart: appTokens.backgroundGradientStart || null,
+    gradientEnd: appTokens.backgroundGradientEnd || null,
+    imageUrl: appTokens.backgroundImageUrl || null,
+    imageOverlay: appTokens.backgroundImageOverlay ?? 0.5,
+  }
 
   if (loading) {
     return (
@@ -427,6 +464,18 @@ export default function PreviewPage() {
                         bannerUrl={conference.banner_url}
                         logoUrl={conference.logo_url}
                         primaryColor={primaryColor}
+                        secondaryColor={secondaryColor}
+                        accentColor={accentColor}
+                        backgroundColor={backgroundColor}
+                        surfaceColor={surfaceColor}
+                        textColor={textColor}
+                        textMutedColor={textMutedColor}
+                        borderColor={borderColor}
+                        fontHeading={fontHeading}
+                        fontBody={fontBody}
+                        cardStyle={cardStyle}
+                        iconTheme={iconTheme}
+                        appBackground={appBackground}
                         modules={DEFAULT_MODULES}
                         onModuleTap={(moduleId) => console.log('Module tapped:', moduleId)}
                         scale={0.75}
@@ -453,6 +502,24 @@ export default function PreviewPage() {
                       venueName={conference.venue_name}
                       primaryColor={primaryColor}
                       secondaryColor={secondaryColor}
+                      accentColor={accentColor}
+                      backgroundColor={backgroundColor}
+                      textColor={textColor}
+                      navBackgroundColor={conference.nav_background_color || undefined}
+                      navTextColor={conference.nav_text_color || undefined}
+                      fontHeading={fontHeading}
+                      fontBody={fontBody}
+                      heroStyle={conference.hero_style || undefined}
+                      heroHeight={conference.hero_height || undefined}
+                      heroBackgroundUrl={conference.hero_background_url || undefined}
+                      heroVideoUrl={conference.hero_video_url || undefined}
+                      heroOverlayOpacity={conference.hero_overlay_opacity ?? undefined}
+                      backgroundPattern={conference.background_pattern || undefined}
+                      backgroundPatternColor={conference.background_pattern_color || undefined}
+                      backgroundGradientStart={conference.background_gradient_start || undefined}
+                      backgroundGradientEnd={conference.background_gradient_end || undefined}
+                      backgroundImageUrl={conference.background_image_url || undefined}
+                      backgroundImageOverlay={conference.background_image_overlay ?? undefined}
                       bannerUrl={conference.banner_url}
                       logoUrl={conference.logo_url}
                     />
@@ -480,6 +547,24 @@ export default function PreviewPage() {
                       venueName={conference.venue_name}
                       primaryColor={primaryColor}
                       secondaryColor={secondaryColor}
+                      accentColor={accentColor}
+                      backgroundColor={backgroundColor}
+                      textColor={textColor}
+                      navBackgroundColor={conference.nav_background_color || undefined}
+                      navTextColor={conference.nav_text_color || undefined}
+                      fontHeading={fontHeading}
+                      fontBody={fontBody}
+                      heroStyle={conference.hero_style || undefined}
+                      heroHeight={conference.hero_height || undefined}
+                      heroBackgroundUrl={conference.hero_background_url || undefined}
+                      heroVideoUrl={conference.hero_video_url || undefined}
+                      heroOverlayOpacity={conference.hero_overlay_opacity ?? undefined}
+                      backgroundPattern={conference.background_pattern || undefined}
+                      backgroundPatternColor={conference.background_pattern_color || undefined}
+                      backgroundGradientStart={conference.background_gradient_start || undefined}
+                      backgroundGradientEnd={conference.background_gradient_end || undefined}
+                      backgroundImageUrl={conference.background_image_url || undefined}
+                      backgroundImageOverlay={conference.background_image_overlay ?? undefined}
                       bannerUrl={conference.banner_url}
                       logoUrl={conference.logo_url}
                     />
