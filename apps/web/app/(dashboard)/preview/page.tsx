@@ -73,6 +73,8 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(true)
   const [conference, setConference] = useState<Conference | null>(null)
   const [designTokens, setDesignTokens] = useState<any | null>(null)
+  const [authError, setAuthError] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const supabase = createClientComponentClient()
   const searchParams = useSearchParams()
@@ -81,17 +83,36 @@ export default function PreviewPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError || !user) {
+          setAuthError(true)
+          return
+        }
 
-        const conferenceQuery = supabase
+        // Try with created_by first
+        let conferenceQuery = supabase
           .from('conferences')
           .select('*')
           .eq('created_by', user.id)
 
-        const { data: conferences } = conferenceId
+        let { data: conferences, error: confError } = conferenceId
           ? await conferenceQuery.eq('id', conferenceId).limit(1)
           : await conferenceQuery.order('created_at', { ascending: false }).limit(1)
+
+        // If no results with created_by, try without (in case column doesn't match)
+        if ((!conferences || conferences.length === 0) && !conferenceId) {
+          const { data: allConfs } = await supabase
+            .from('conferences')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(1)
+          conferences = allConfs
+        }
+
+        if (confError) {
+          setLoadError(confError.message)
+          return
+        }
 
         if (conferences && conferences.length > 0) {
           const activeConference = conferences[0]
@@ -108,6 +129,7 @@ export default function PreviewPage() {
         }
       } catch (error) {
         console.error('Error loading preview data:', error)
+        setLoadError('Failed to load preview data')
       } finally {
         setLoading(false)
       }
@@ -171,15 +193,37 @@ export default function PreviewPage() {
     )
   }
 
+  if (authError) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center gap-4">
+        <Eye className="h-12 w-12 text-amber-400" />
+        <h2 className="text-xl font-semibold">Not Logged In</h2>
+        <p className="text-muted-foreground">Sign in to preview your conference.</p>
+        <Button asChild>
+          <a href="/login">Sign In</a>
+        </Button>
+      </div>
+    )
+  }
+
   if (!conference) {
     return (
       <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center gap-4">
         <Eye className="h-12 w-12 text-muted-foreground" />
         <h2 className="text-xl font-semibold">No Conference Found</h2>
-        <p className="text-muted-foreground">Create a conference first to preview it.</p>
-        <Button asChild>
-          <a href="/conferences/new">Create Conference</a>
-        </Button>
+        <p className="text-muted-foreground max-w-md text-center">
+          {loadError
+            ? `Error: ${loadError}`
+            : 'No conferences found. Create one first to preview it.'}
+        </p>
+        <div className="flex gap-3">
+          <Button asChild>
+            <a href="/conferences/new">Create Conference</a>
+          </Button>
+          <Button variant="outline" asChild>
+            <a href="/conferences">View All Conferences</a>
+          </Button>
+        </div>
       </div>
     )
   }
