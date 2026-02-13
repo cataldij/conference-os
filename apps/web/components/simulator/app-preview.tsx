@@ -139,6 +139,10 @@ interface PreviewConfig {
   appButtonStyle?: 'solid' | 'outline' | 'soft'
   appButtonColor?: string
   appButtonTextColor?: string
+  appTileSize?: 'sm' | 'md' | 'lg'
+  appTileColumns?: 2 | 3 | 4 | 5 | 6
+  appTileLayout?: 'grid' | 'row'
+  appTileGap?: number
   appBackground?: {
     pattern?: string | null
     patternColor?: string | null
@@ -213,6 +217,10 @@ export function AppPreview({ config, className = '' }: AppPreviewProps) {
       appButtonStyle: config.appButtonStyle,
       appButtonColor: config.appButtonColor,
       appButtonTextColor: config.appButtonTextColor,
+      appTileSize: config.appTileSize,
+      appTileColumns: config.appTileColumns,
+      appTileLayout: config.appTileLayout,
+      appTileGap: config.appTileGap,
       appBackground: config.appBackground,
       scale,
     }
@@ -246,6 +254,10 @@ export function AppPreview({ config, className = '' }: AppPreviewProps) {
         appButtonStyle={config.appButtonStyle}
         appButtonColor={config.appButtonColor}
         appButtonTextColor={config.appButtonTextColor}
+        appTileSize={config.appTileSize}
+        appTileColumns={config.appTileColumns}
+        appTileLayout={config.appTileLayout}
+        appTileGap={config.appTileGap}
         appBackground={config.appBackground}
         modules={config.modules}
         onModuleTap={handleModuleTap}

@@ -159,6 +159,10 @@ export default function PreviewPage() {
   const appButtonStyle = appTokens.appButtonStyle || 'solid'
   const appButtonColor = appTokens.appButtonColor || primaryColor
   const appButtonTextColor = appTokens.appButtonTextColor || '#ffffff'
+  const appTileSize = appTokens.appTileSize || 'md'
+  const appTileColumns = appTokens.appTileColumns || 3
+  const appTileLayout = appTokens.appTileLayout || 'grid'
+  const appTileGap = appTokens.appTileGap ?? 8
   const appModules = (appTokens.modules as NavigationModule[]) || DEFAULT_MODULES
   const appBackground = {
     pattern: appTokens.backgroundPattern || null,
@@ -575,6 +579,10 @@ export default function PreviewPage() {
                           appButtonStyle={appButtonStyle}
                           appButtonColor={appButtonColor}
                           appButtonTextColor={appButtonTextColor}
+                          appTileSize={appTileSize}
+                          appTileColumns={appTileColumns}
+                          appTileLayout={appTileLayout}
+                          appTileGap={appTileGap}
                           appBackground={appBackground}
                           modules={appModules}
                           onModuleTap={(moduleId) => {

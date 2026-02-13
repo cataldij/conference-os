@@ -336,7 +336,9 @@ interface CompactModuleGridProps {
   modules?: string[]
   moduleConfigs?: Record<string, ModuleConfig>
   onModulePress?: (moduleId: string) => void
-  columns?: 2 | 3
+  columns?: 2 | 3 | 4 | 5 | 6
+  layout?: 'grid' | 'row'
+  tileSize?: 'sm' | 'md' | 'lg'
   scale?: number
   gap?: number
   iconStyle?: 'solid' | 'outline' | 'duotone' | 'glass'
@@ -348,6 +350,8 @@ export function CompactModuleGrid({
   moduleConfigs: customModuleConfigs,
   onModulePress,
   columns = 3,
+  layout = 'grid',
+  tileSize = 'md',
   scale = 0.7,
   gap = 8,
   iconStyle = 'solid',
@@ -362,13 +366,18 @@ export function CompactModuleGrid({
       })
     : modules
 
+  const tileScale =
+    tileSize === 'sm' ? 0.85 : tileSize === 'lg' ? 1.15 : 1
+
   return (
     <div
       style={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${columns}, 1fr)`,
+        display: layout === 'row' ? 'flex' : 'grid',
+        flexWrap: layout === 'row' ? 'nowrap' : undefined,
+        overflowX: layout === 'row' ? 'auto' : undefined,
+        gridTemplateColumns: layout === 'grid' ? `repeat(${columns}, 1fr)` : undefined,
         gap: gap * scale,
-        justifyItems: 'center',
+        justifyItems: layout === 'grid' ? 'center' : undefined,
         ...style,
       }}
     >
@@ -376,7 +385,7 @@ export function CompactModuleGrid({
         <CompactModuleTile
           key={moduleId}
           module={customModuleConfigs?.[moduleId] || moduleId}
-          scale={scale}
+          scale={scale * tileScale}
           onPress={() => onModulePress?.(moduleId)}
           iconStyle={iconStyle}
         />

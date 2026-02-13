@@ -75,6 +75,11 @@ export default async function ConferenceEditPage({
     appButtonStyle: appTokens.appButtonStyle || 'solid',
     appButtonColor: appTokens.appButtonColor || conference.primary_color || '#2563eb',
     appButtonTextColor: appTokens.appButtonTextColor || '#ffffff',
+    // App Tile Layout
+    appTileSize: appTokens.appTileSize || 'md',
+    appTileColumns: appTokens.appTileColumns || 3,
+    appTileLayout: appTokens.appTileLayout || 'grid',
+    appTileGap: appTokens.appTileGap ?? 8,
     // Typography
     fontHeading: conference.font_heading || 'Inter',
     fontBody: conference.font_body || 'Inter',

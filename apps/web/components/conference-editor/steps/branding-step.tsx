@@ -476,6 +476,59 @@ export function BrandingStep() {
             </select>
           </div>
 
+          <div className="space-y-4">
+            <Label className="text-sm font-semibold">App Tile Layout</Label>
+            <div className="grid gap-4 sm:grid-cols-4">
+              <div className="space-y-2">
+                <Label className="text-xs">Layout</Label>
+                <select
+                  value={conference.appTileLayout}
+                  onChange={(e) => updateConference({ appTileLayout: e.target.value as any })}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                >
+                  <option value="grid">Grid</option>
+                  <option value="row">Single Row</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Columns</Label>
+                <select
+                  value={conference.appTileColumns}
+                  onChange={(e) => updateConference({ appTileColumns: Number(e.target.value) as any })}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                >
+                  {[2, 3, 4, 5, 6].map((value) => (
+                    <option key={value} value={value}>{value}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Tile Size</Label>
+                <select
+                  value={conference.appTileSize}
+                  onChange={(e) => updateConference({ appTileSize: e.target.value as any })}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                >
+                  <option value="sm">Small</option>
+                  <option value="md">Medium</option>
+                  <option value="lg">Large</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Gap</Label>
+                <Input
+                  type="number"
+                  min={4}
+                  max={24}
+                  step={2}
+                  value={conference.appTileGap}
+                  onChange={(e) => updateConference({ appTileGap: Number(e.target.value) })}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Preview */}
           <div className="space-y-3">
             <Label>Preview</Label>

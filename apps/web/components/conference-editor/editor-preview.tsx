@@ -50,6 +50,10 @@ export function EditorPreview() {
     appButtonStyle: conference.appButtonStyle || 'solid',
     appButtonColor: conference.appButtonColor || conference.primaryColor || '#2563eb',
     appButtonTextColor: conference.appButtonTextColor || '#ffffff',
+    appTileSize: conference.appTileSize || 'md',
+    appTileColumns: conference.appTileColumns || 3,
+    appTileLayout: conference.appTileLayout || 'grid',
+    appTileGap: conference.appTileGap ?? 8,
     fonts: {
       heading: conference.fontHeading || 'Inter',
       body: conference.fontBody || 'Inter',

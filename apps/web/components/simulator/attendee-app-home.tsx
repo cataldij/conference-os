@@ -54,6 +54,10 @@ interface AttendeeAppHomeProps {
   appButtonStyle?: 'solid' | 'outline' | 'soft'
   appButtonColor?: string
   appButtonTextColor?: string
+  appTileSize?: 'sm' | 'md' | 'lg'
+  appTileColumns?: 2 | 3 | 4 | 5 | 6
+  appTileLayout?: 'grid' | 'row'
+  appTileGap?: number
   appBackground?: {
     pattern?: string | null
     patternColor?: string | null
@@ -98,6 +102,10 @@ export function AttendeeAppHome({
   appButtonStyle = 'solid',
   appButtonColor = ios.colors.systemBlue,
   appButtonTextColor = '#ffffff',
+  appTileSize = 'md',
+  appTileColumns = 3,
+  appTileLayout = 'grid',
+  appTileGap = 8,
   appBackground,
   modules,
   onModuleTap,
@@ -271,15 +279,17 @@ export function AttendeeAppHome({
             textMutedColor={textMutedColor}
             fontBody={fontBody}
           />
-          <CompactModuleGrid
-            modules={enabledModules}
-            onModulePress={onModuleTap}
-            columns={3}
-            scale={scale * 0.85}
-            gap={8}
-            iconStyle={iconTheme}
-            moduleConfigs={customModuleConfigs}
-          />
+        <CompactModuleGrid
+          modules={enabledModules}
+          onModulePress={onModuleTap}
+          columns={appTileColumns}
+          layout={appTileLayout}
+          scale={scale * 0.85}
+          gap={appTileGap}
+          tileSize={appTileSize}
+          iconStyle={iconTheme}
+          moduleConfigs={customModuleConfigs}
+        />
 
           {/* Quick Stats */}
           <SectionHeader

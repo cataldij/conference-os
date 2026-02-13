@@ -40,6 +40,11 @@ export interface ConferenceData {
   appButtonStyle: 'solid' | 'outline' | 'soft'
   appButtonColor: string
   appButtonTextColor: string
+  // App Tile Layout
+  appTileSize: 'sm' | 'md' | 'lg'
+  appTileColumns: 2 | 3 | 4 | 5 | 6
+  appTileLayout: 'grid' | 'row'
+  appTileGap: number
   // Typography
   fontHeading: string
   fontBody: string
@@ -181,6 +186,11 @@ const DEFAULT_CONFERENCE: ConferenceData = {
   appButtonStyle: 'solid',
   appButtonColor: '#2563eb',
   appButtonTextColor: '#ffffff',
+  // App Tile Layout
+  appTileSize: 'md',
+  appTileColumns: 3,
+  appTileLayout: 'grid',
+  appTileGap: 8,
   // Typography
   fontHeading: 'Inter',
   fontBody: 'Inter',
