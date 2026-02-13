@@ -12,6 +12,12 @@ import { DesktopWebsitePreview } from '@/components/simulator/desktop-website-pr
 import { AttendeeAppShell, DEFAULT_TABS } from '@/components/simulator/attendee-app-shell'
 import { AttendeeAppHome } from '@/components/simulator/attendee-app-home'
 import {
+  AgendaScreen,
+  SpeakersScreen,
+  MapScreen,
+  ProfileScreen,
+} from '@/components/simulator/attendee-app-screens'
+import {
   Smartphone,
   Monitor,
   Tablet,
@@ -477,34 +483,114 @@ export default function PreviewPage() {
                       primaryColor={primaryColor}
                       scale={0.75}
                     >
-                      <AttendeeAppHome
-                        eventName={conference.name}
-                        tagline={conference.tagline}
-                        startDate={conference.start_date}
-                        endDate={conference.end_date}
-                        venueName={conference.venue_name}
-                        bannerUrl={conference.banner_url}
-                        logoUrl={conference.logo_url}
-                        primaryColor={primaryColor}
-                        secondaryColor={secondaryColor}
-                        accentColor={accentColor}
-                        backgroundColor={backgroundColor}
-                        surfaceColor={surfaceColor}
-                        textColor={textColor}
-                        textMutedColor={textMutedColor}
-                        borderColor={borderColor}
-                        fontHeading={fontHeading}
-                        fontBody={fontBody}
-                        cardStyle={cardStyle}
-                        iconTheme={iconTheme}
-                        appButtonStyle={appButtonStyle}
-                        appButtonColor={appButtonColor}
-                        appButtonTextColor={appButtonTextColor}
-                        appBackground={appBackground}
-                        modules={appModules}
-                        onModuleTap={(moduleId) => console.log('Module tapped:', moduleId)}
-                        scale={0.75}
-                      />
+                      {activeTab === 'agenda' ? (
+                        <AgendaScreen
+                          primaryColor={primaryColor}
+                          secondaryColor={secondaryColor}
+                          accentColor={accentColor}
+                          backgroundColor={backgroundColor}
+                          surfaceColor={surfaceColor}
+                          textColor={textColor}
+                          textMutedColor={textMutedColor}
+                          borderColor={borderColor}
+                          fontHeading={fontHeading}
+                          fontBody={fontBody}
+                          cardStyle={cardStyle}
+                          iconTheme={iconTheme}
+                          appBackground={appBackground}
+                          scale={0.75}
+                        />
+                      ) : activeTab === 'speakers' ? (
+                        <SpeakersScreen
+                          primaryColor={primaryColor}
+                          secondaryColor={secondaryColor}
+                          accentColor={accentColor}
+                          backgroundColor={backgroundColor}
+                          surfaceColor={surfaceColor}
+                          textColor={textColor}
+                          textMutedColor={textMutedColor}
+                          borderColor={borderColor}
+                          fontHeading={fontHeading}
+                          fontBody={fontBody}
+                          cardStyle={cardStyle}
+                          iconTheme={iconTheme}
+                          appBackground={appBackground}
+                          scale={0.75}
+                        />
+                      ) : activeTab === 'map' ? (
+                        <MapScreen
+                          primaryColor={primaryColor}
+                          secondaryColor={secondaryColor}
+                          accentColor={accentColor}
+                          backgroundColor={backgroundColor}
+                          surfaceColor={surfaceColor}
+                          textColor={textColor}
+                          textMutedColor={textMutedColor}
+                          borderColor={borderColor}
+                          fontHeading={fontHeading}
+                          fontBody={fontBody}
+                          cardStyle={cardStyle}
+                          iconTheme={iconTheme}
+                          appBackground={appBackground}
+                          scale={0.75}
+                        />
+                      ) : activeTab === 'profile' ? (
+                        <ProfileScreen
+                          primaryColor={primaryColor}
+                          secondaryColor={secondaryColor}
+                          accentColor={accentColor}
+                          backgroundColor={backgroundColor}
+                          surfaceColor={surfaceColor}
+                          textColor={textColor}
+                          textMutedColor={textMutedColor}
+                          borderColor={borderColor}
+                          fontHeading={fontHeading}
+                          fontBody={fontBody}
+                          cardStyle={cardStyle}
+                          iconTheme={iconTheme}
+                          appBackground={appBackground}
+                          scale={0.75}
+                        />
+                      ) : (
+                        <AttendeeAppHome
+                          eventName={conference.name}
+                          tagline={conference.tagline}
+                          startDate={conference.start_date}
+                          endDate={conference.end_date}
+                          venueName={conference.venue_name}
+                          bannerUrl={conference.banner_url}
+                          logoUrl={conference.logo_url}
+                          primaryColor={primaryColor}
+                          secondaryColor={secondaryColor}
+                          accentColor={accentColor}
+                          backgroundColor={backgroundColor}
+                          surfaceColor={surfaceColor}
+                          textColor={textColor}
+                          textMutedColor={textMutedColor}
+                          borderColor={borderColor}
+                          fontHeading={fontHeading}
+                          fontBody={fontBody}
+                          cardStyle={cardStyle}
+                          iconTheme={iconTheme}
+                          appButtonStyle={appButtonStyle}
+                          appButtonColor={appButtonColor}
+                          appButtonTextColor={appButtonTextColor}
+                          appBackground={appBackground}
+                          modules={appModules}
+                          onModuleTap={(moduleId) => {
+                            const moduleToTab: Record<string, TabId> = {
+                              agenda: 'agenda',
+                              schedule: 'agenda',
+                              speakers: 'speakers',
+                              map: 'map',
+                              profile: 'profile',
+                            }
+                            const target = moduleToTab[moduleId]
+                            if (target) setActiveTab(target)
+                          }}
+                          scale={0.75}
+                        />
+                      )}
                     </AttendeeAppShell>
                   </IphoneSimulator>
                 </motion.div>
