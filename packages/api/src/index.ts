@@ -48,6 +48,15 @@ export {
   getConferenceSessions,
   getSessionsByDate,
   getSessionById,
+  getSessionQuestions,
+  getUserUpvotedQuestionIds,
+  askSessionQuestion,
+  toggleSessionQuestionUpvote,
+  getSessionPolls,
+  getPollResponseCounts,
+  getUserPollResponses,
+  submitPollResponse,
+  getSessionAttendanceCount,
   saveSession,
   unsaveSession,
   getUserSavedSessions,
@@ -60,7 +69,16 @@ export {
   trackSessionInteraction,
   updateUserInterests,
 } from './conferences'
-export type { ConferenceInput, ConferenceWithDetails, SessionRecommendation } from './conferences'
+export type {
+  ConferenceInput,
+  ConferenceWithDetails,
+  SessionRecommendation,
+  SessionQuestion,
+  SessionPoll,
+  SessionPollOption,
+  PollResponseCounts,
+  UserPollResponses,
+} from './conferences'
 
 // Networking
 export {

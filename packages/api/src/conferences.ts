@@ -29,6 +29,73 @@ export interface ConferenceWithDetails extends Conference {
   memberCount: number
 }
 
+export interface SessionQuestion {
+  id: string
+  user_id: string
+  question: string
+  is_anonymous: boolean
+  upvotes: number
+  is_answered: boolean
+  is_featured: boolean
+  created_at: string
+  user?: {
+    full_name: string | null
+    avatar_url: string | null
+  } | null
+}
+
+export interface SessionPollOption {
+  id: string
+  text: string
+}
+
+export interface SessionPoll {
+  id: string
+  question: string
+  options: SessionPollOption[]
+  is_active: boolean
+  show_results: boolean
+  allow_multiple: boolean
+  created_at: string
+  closed_at: string | null
+}
+
+export type PollResponseCounts = Record<string, Record<string, number>>
+export type UserPollResponses = Record<string, string[]>
+
+function normalizePollOptions(rawOptions: unknown): SessionPollOption[] {
+  if (!Array.isArray(rawOptions)) return []
+
+  return rawOptions
+    .map((option, index) => {
+      if (typeof option === 'string') {
+        return { id: String(index), text: option }
+      }
+
+      if (
+        option &&
+        typeof option === 'object' &&
+        'id' in option &&
+        'text' in option
+      ) {
+        return {
+          id: String((option as { id: unknown }).id),
+          text: String((option as { text: unknown }).text),
+        }
+      }
+
+      if (option && typeof option === 'object' && 'text' in option) {
+        return {
+          id: String(index),
+          text: String((option as { text: unknown }).text),
+        }
+      }
+
+      return null
+    })
+    .filter((option): option is SessionPollOption => Boolean(option))
+}
+
 // Fetch conferences
 export async function getPublicConferences(): Promise<Conference[]> {
   const supabase = getSupabase()
@@ -228,7 +295,11 @@ export async function getSessionById(sessionId: string): Promise<Session | null>
 
   const { data, error } = await supabase
     .from('sessions')
-    .select('*')
+    .select(`
+      *,
+      track:tracks(*),
+      room:rooms(*)
+    `)
     .eq('id', sessionId)
     .single()
 
@@ -238,6 +309,207 @@ export async function getSessionById(sessionId: string): Promise<Session | null>
   }
 
   return data
+}
+
+export async function getSessionQuestions(sessionId: string): Promise<SessionQuestion[]> {
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase
+    .from('qa_questions')
+    .select(`
+      *,
+      user:profiles(full_name, avatar_url)
+    `)
+    .eq('session_id', sessionId)
+    .order('is_featured', { ascending: false })
+    .order('upvotes', { ascending: false })
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function getUserUpvotedQuestionIds(userId: string): Promise<string[]> {
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase
+    .from('qa_upvotes')
+    .select('question_id')
+    .eq('user_id', userId)
+
+  if (error) throw error
+  return (data || []).map((row) => row.question_id)
+}
+
+export async function askSessionQuestion(
+  sessionId: string,
+  userId: string,
+  question: string,
+  isAnonymous = false
+) {
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase
+    .from('qa_questions')
+    .insert({
+      session_id: sessionId,
+      user_id: userId,
+      question: question.trim(),
+      is_anonymous: isAnonymous,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function toggleSessionQuestionUpvote(
+  questionId: string,
+  userId: string,
+  hasUpvoted: boolean
+): Promise<boolean> {
+  const supabase = getSupabase()
+
+  if (hasUpvoted) {
+    const { error: deleteError } = await supabase
+      .from('qa_upvotes')
+      .delete()
+      .eq('question_id', questionId)
+      .eq('user_id', userId)
+
+    if (deleteError) throw deleteError
+
+    const { error: rpcError } = await supabase.rpc('decrement_upvotes', {
+      question_id: questionId,
+    })
+
+    if (rpcError) {
+      console.warn('decrement_upvotes RPC warning:', rpcError.message)
+    }
+
+    return false
+  }
+
+  const { error: insertError } = await supabase.from('qa_upvotes').insert({
+    question_id: questionId,
+    user_id: userId,
+  })
+
+  if (insertError) throw insertError
+
+  const { error: rpcError } = await supabase.rpc('increment_upvotes', {
+    question_id: questionId,
+  })
+
+  if (rpcError) {
+    console.warn('increment_upvotes RPC warning:', rpcError.message)
+  }
+
+  return true
+}
+
+export async function getSessionPolls(sessionId: string): Promise<SessionPoll[]> {
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase
+    .from('polls')
+    .select('*')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+
+  return (data || []).map((poll) => ({
+    ...poll,
+    options: normalizePollOptions(poll.options),
+  }))
+}
+
+export async function getPollResponseCounts(pollIds: string[]): Promise<PollResponseCounts> {
+  const supabase = getSupabase()
+
+  if (!pollIds.length) return {}
+
+  const { data, error } = await supabase
+    .from('poll_responses')
+    .select('poll_id, option_id')
+    .in('poll_id', pollIds)
+
+  if (error) throw error
+
+  const counts: PollResponseCounts = {}
+
+  for (const row of data || []) {
+    if (!counts[row.poll_id]) {
+      counts[row.poll_id] = {}
+    }
+    counts[row.poll_id][row.option_id] = (counts[row.poll_id][row.option_id] || 0) + 1
+  }
+
+  return counts
+}
+
+export async function getUserPollResponses(
+  userId: string,
+  pollIds: string[]
+): Promise<UserPollResponses> {
+  const supabase = getSupabase()
+
+  if (!pollIds.length) return {}
+
+  const { data, error } = await supabase
+    .from('poll_responses')
+    .select('poll_id, option_id')
+    .eq('user_id', userId)
+    .in('poll_id', pollIds)
+
+  if (error) throw error
+
+  const responses: UserPollResponses = {}
+
+  for (const row of data || []) {
+    if (!responses[row.poll_id]) {
+      responses[row.poll_id] = []
+    }
+    responses[row.poll_id].push(row.option_id)
+  }
+
+  return responses
+}
+
+export async function submitPollResponse(pollId: string, userId: string, optionId: string) {
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase
+    .from('poll_responses')
+    .insert({
+      poll_id: pollId,
+      user_id: userId,
+      option_id: optionId,
+    })
+    .select()
+    .single()
+
+  // Unique conflict means user already voted for this option; treat as success.
+  if (error && error.code !== '23505') throw error
+  return data
+}
+
+export async function getSessionAttendanceCount(sessionId: string): Promise<number | null> {
+  const supabase = getSupabase()
+
+  const { count, error } = await supabase
+    .from('session_attendance')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', sessionId)
+
+  if (error) {
+    console.warn('Could not fetch session attendance count:', error.message)
+    return null
+  }
+
+  return count || 0
 }
 
 // Saved sessions (user's personal agenda)

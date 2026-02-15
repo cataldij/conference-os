@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { ScrollView, Pressable, RefreshControl, Share } from 'react-native'
+import { useMemo, useState } from 'react'
+import { ScrollView, Pressable, RefreshControl, Share, TextInput, Alert } from 'react-native'
 import { useLocalSearchParams, Stack, router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -9,13 +9,11 @@ import {
   XStack,
   Text,
   H1,
-  H3,
   H4,
   Card,
   Button,
   Avatar,
   Progress,
-  Separator,
 } from '@conference-os/ui'
 import {
   Clock,
@@ -27,7 +25,6 @@ import {
   MessageCircle,
   ChevronLeft,
   Share2,
-  Bell,
 } from '@tamagui/lucide-icons'
 import { useAuth } from '../../hooks/useAuth'
 import { useConference } from '../../hooks/useConference'
@@ -37,34 +34,85 @@ import {
   unsaveSession,
   getUserSavedSessions,
   trackSessionInteraction,
+  getSessionQuestions,
+  getUserUpvotedQuestionIds,
+  askSessionQuestion,
+  toggleSessionQuestionUpvote,
+  getSessionPolls,
+  getPollResponseCounts,
+  getUserPollResponses,
+  submitPollResponse,
+  getSessionAttendanceCount,
 } from '@conference-os/api'
 
 export default function SessionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const insets = useSafeAreaInsets()
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
   const { activeConference, theme } = useConference()
   const queryClient = useQueryClient()
 
   const [activeTab, setActiveTab] = useState<'overview' | 'qa' | 'polls'>('overview')
-  const [selectedPollOption, setSelectedPollOption] = useState<string | null>(null)
-  const [hasVoted, setHasVoted] = useState(false)
+  const [isQuestionFormOpen, setIsQuestionFormOpen] = useState(false)
+  const [questionDraft, setQuestionDraft] = useState('')
+  const [selectedPollOptions, setSelectedPollOptions] = useState<Record<string, string>>({})
 
-  // Fetch session details
-  const { data: session, isLoading, refetch } = useQuery({
+  const sessionQuery = useQuery({
     queryKey: ['session', id],
     queryFn: () => getSessionById(id!),
     enabled: !!id,
   })
 
-  // Fetch saved sessions to check if current session is saved
-  const { data: savedSessions } = useQuery({
+  const savedSessionsQuery = useQuery({
     queryKey: ['saved-sessions', user?.id, activeConference?.id],
     queryFn: () => getUserSavedSessions(user!.id, activeConference!.id),
     enabled: !!user && !!activeConference,
   })
 
-  // Track session view
+  const questionsQuery = useQuery({
+    queryKey: ['session-questions', id],
+    queryFn: () => getSessionQuestions(id!),
+    enabled: !!id,
+    refetchInterval: 15000,
+  })
+
+  const upvotesQuery = useQuery({
+    queryKey: ['session-user-upvotes', user?.id],
+    queryFn: () => getUserUpvotedQuestionIds(user!.id),
+    enabled: !!user,
+    refetchInterval: 30000,
+  })
+
+  const pollsQuery = useQuery({
+    queryKey: ['session-polls', id],
+    queryFn: () => getSessionPolls(id!),
+    enabled: !!id,
+    refetchInterval: 15000,
+  })
+
+  const pollIds = useMemo(() => (pollsQuery.data || []).map((poll) => poll.id), [pollsQuery.data])
+
+  const pollCountsQuery = useQuery({
+    queryKey: ['session-poll-counts', pollIds],
+    queryFn: () => getPollResponseCounts(pollIds),
+    enabled: pollIds.length > 0,
+    refetchInterval: 15000,
+  })
+
+  const userPollResponsesQuery = useQuery({
+    queryKey: ['session-poll-user-responses', user?.id, pollIds],
+    queryFn: () => getUserPollResponses(user!.id, pollIds),
+    enabled: !!user && pollIds.length > 0,
+    refetchInterval: 15000,
+  })
+
+  const attendanceQuery = useQuery({
+    queryKey: ['session-attendance', id],
+    queryFn: () => getSessionAttendanceCount(id!),
+    enabled: !!id,
+    refetchInterval: 15000,
+  })
+
   useQuery({
     queryKey: ['track-view', id, user?.id],
     queryFn: async () => {
@@ -74,10 +122,9 @@ export default function SessionDetailScreen() {
       return true
     },
     enabled: !!user && !!id,
-    staleTime: Infinity, // Only track once per session
+    staleTime: Infinity,
   })
 
-  // Save/unsave mutation
   const saveMutation = useMutation({
     mutationFn: async (save: boolean) => {
       if (save) {
@@ -91,7 +138,99 @@ export default function SessionDetailScreen() {
     },
   })
 
-  const isSaved = savedSessions?.some((s) => s.id === id) || false
+  const askQuestionMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !id || !questionDraft.trim()) return
+      await askSessionQuestion(id, user.id, questionDraft, false)
+    },
+    onSuccess: () => {
+      setQuestionDraft('')
+      setIsQuestionFormOpen(false)
+      queryClient.invalidateQueries({ queryKey: ['session-questions', id] })
+    },
+    onError: (error) => {
+      Alert.alert('Unable to submit question', error instanceof Error ? error.message : 'Try again.')
+    },
+  })
+
+  const upvoteMutation = useMutation({
+    mutationFn: async ({ questionId, hasUpvoted }: { questionId: string; hasUpvoted: boolean }) => {
+      if (!user) return
+      await toggleSessionQuestionUpvote(questionId, user.id, hasUpvoted)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['session-questions', id] })
+      queryClient.invalidateQueries({ queryKey: ['session-user-upvotes', user?.id] })
+    },
+    onError: (error) => {
+      Alert.alert('Unable to update upvote', error instanceof Error ? error.message : 'Try again.')
+    },
+  })
+
+  const voteMutation = useMutation({
+    mutationFn: async ({ pollId, optionId }: { pollId: string; optionId: string }) => {
+      if (!user) return
+      await submitPollResponse(pollId, user.id, optionId)
+    },
+    onSuccess: (_, variables) => {
+      setSelectedPollOptions((prev) => {
+        const next = { ...prev }
+        delete next[variables.pollId]
+        return next
+      })
+      queryClient.invalidateQueries({ queryKey: ['session-poll-counts'] })
+      queryClient.invalidateQueries({ queryKey: ['session-poll-user-responses'] })
+    },
+    onError: (error) => {
+      Alert.alert('Unable to submit vote', error instanceof Error ? error.message : 'Try again.')
+    },
+  })
+
+  const session = sessionQuery.data
+  const isLoading = sessionQuery.isLoading
+  const isSaved = savedSessionsQuery.data?.some((saved) => saved.id === id) || false
+
+  const upvotedQuestionIds = useMemo(
+    () => new Set(upvotesQuery.data || []),
+    [upvotesQuery.data]
+  )
+
+  const questions = useMemo(
+    () =>
+      (questionsQuery.data || []).map((question) => ({
+        ...question,
+        isUpvoted: upvotedQuestionIds.has(question.id),
+      })),
+    [questionsQuery.data, upvotedQuestionIds]
+  )
+
+  const visiblePolls = useMemo(
+    () =>
+      (pollsQuery.data || []).filter((poll) => {
+        const userVotes = userPollResponsesQuery.data?.[poll.id] || []
+        return poll.is_active || poll.show_results || userVotes.length > 0
+      }),
+    [pollsQuery.data, userPollResponsesQuery.data]
+  )
+
+  const isRefreshing =
+    sessionQuery.isFetching ||
+    questionsQuery.isFetching ||
+    pollsQuery.isFetching ||
+    pollCountsQuery.isFetching ||
+    userPollResponsesQuery.isFetching ||
+    attendanceQuery.isFetching
+
+  const handleRefresh = async () => {
+    await Promise.all([
+      sessionQuery.refetch(),
+      questionsQuery.refetch(),
+      pollsQuery.refetch(),
+      pollCountsQuery.refetch(),
+      userPollResponsesQuery.refetch(),
+      attendanceQuery.refetch(),
+    ])
+  }
 
   const handleSaveSession = () => {
     saveMutation.mutate(!isSaved)
@@ -109,57 +248,14 @@ export default function SessionDetailScreen() {
     }
   }
 
-  // Mock Q&A data (will be replaced with real API)
-  const [questions, setQuestions] = useState([
-    {
-      id: '1',
-      question: 'How do you handle rate limiting when calling AI APIs?',
-      author: 'Alex M.',
-      upvotes: 24,
-      isUpvoted: false,
-      isAnswered: false,
-      timestamp: new Date(),
-    },
-    {
-      id: '2',
-      question: 'What are the best practices for prompt engineering?',
-      author: 'Jamie K.',
-      upvotes: 18,
-      isUpvoted: true,
-      isAnswered: false,
-      timestamp: new Date(),
-    },
-  ])
-
-  // Mock poll data (will be replaced with real API)
-  const mockPoll = {
-    id: '1',
-    question: 'Which framework do you currently use in production?',
-    options: [
-      { id: '1', text: 'React Native', votes: 42 },
-      { id: '2', text: 'Flutter', votes: 28 },
-      { id: '3', text: 'Native iOS/Android', votes: 35 },
-      { id: '4', text: 'Other', votes: 18 },
-    ],
-    isActive: true,
-    totalVotes: 123,
+  const handleUpvoteQuestion = (questionId: string, hasUpvoted: boolean) => {
+    upvoteMutation.mutate({ questionId, hasUpvoted })
   }
 
-  const handleVote = () => {
-    if (!selectedPollOption) return
-    setHasVoted(true)
-    // TODO: Call API to submit vote
-  }
-
-  const handleUpvoteQuestion = (questionId: string) => {
-    setQuestions((prev) =>
-      prev.map((q) =>
-        q.id === questionId
-          ? { ...q, isUpvoted: !q.isUpvoted, upvotes: q.isUpvoted ? q.upvotes - 1 : q.upvotes + 1 }
-          : q
-      )
-    )
-    // TODO: Call API to upvote question
+  const handleVote = (pollId: string) => {
+    const optionId = selectedPollOptions[pollId]
+    if (!optionId) return
+    voteMutation.mutate({ pollId, optionId })
   }
 
   if (isLoading || !session) {
@@ -181,14 +277,16 @@ export default function SessionDetailScreen() {
   const room = (session as any).room
   const speakers = (session as any).speakers || []
   const maxAttendees = session.max_attendees || 200
-  const currentAttendees = 87 // TODO: Get from real data
-  const capacityPercentage = (currentAttendees / maxAttendees) * 100
+  const currentAttendees = attendanceQuery.data
+  const hasAttendanceData = typeof currentAttendees === 'number'
+  const capacityPercentage = hasAttendanceData
+    ? Math.min(100, (currentAttendees / maxAttendees) * 100)
+    : 0
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <YStack flex={1} backgroundColor="$background">
-        {/* Custom Header */}
         <XStack
           paddingTop={insets.top + 12}
           paddingBottom="$3"
@@ -234,11 +332,10 @@ export default function SessionDetailScreen() {
             paddingBottom: insets.bottom + 100,
           }}
           refreshControl={
-            <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
           }
         >
           <YStack paddingHorizontal="$5" paddingTop="$4" gap="$4">
-            {/* Live Badge */}
             {isLive && (
               <XStack alignItems="center" gap="$2">
                 <XStack
@@ -255,15 +352,13 @@ export default function SessionDetailScreen() {
                   </Text>
                 </XStack>
                 <Text color="$colorSecondary" fontSize="$2">
-                  {currentAttendees} attending
+                  {hasAttendanceData ? `${currentAttendees} attending` : 'Live now'}
                 </Text>
               </XStack>
             )}
 
-            {/* Title */}
             <H1>{session.title}</H1>
 
-            {/* Track Badge */}
             {track && (
               <XStack alignItems="center" gap="$2">
                 <XStack
@@ -283,7 +378,6 @@ export default function SessionDetailScreen() {
               </XStack>
             )}
 
-            {/* Time & Location */}
             <YStack gap="$2">
               <XStack alignItems="center" gap="$3">
                 <Clock size={18} color="$colorSecondary" />
@@ -299,7 +393,7 @@ export default function SessionDetailScreen() {
                   </Text>
                 </XStack>
               )}
-              {maxAttendees && (
+              {maxAttendees && hasAttendanceData && (
                 <XStack alignItems="center" gap="$3">
                   <Users size={18} color="$colorSecondary" />
                   <YStack flex={1} gap="$1">
@@ -314,7 +408,6 @@ export default function SessionDetailScreen() {
               )}
             </YStack>
 
-            {/* Action Buttons */}
             <XStack gap="$3">
               <Button
                 flex={1}
@@ -333,7 +426,6 @@ export default function SessionDetailScreen() {
               )}
             </XStack>
 
-            {/* Tabs */}
             <XStack gap="$2" marginTop="$2">
               <Pressable onPress={() => setActiveTab('overview')} style={{ flex: 1 }}>
                 <XStack
@@ -385,10 +477,8 @@ export default function SessionDetailScreen() {
               </Pressable>
             </XStack>
 
-            {/* Tab Content */}
             {activeTab === 'overview' && (
               <YStack gap="$4" marginTop="$2">
-                {/* Description */}
                 <YStack gap="$2">
                   <H4>About This Session</H4>
                   <Text color="$colorSecondary" lineHeight={24}>
@@ -396,34 +486,42 @@ export default function SessionDetailScreen() {
                   </Text>
                 </YStack>
 
-                {/* Speakers */}
                 {speakers.length > 0 && (
                   <YStack gap="$3">
                     <H4>Speakers</H4>
-                    {speakers.map((speaker: any) => (
-                      <Card key={speaker.id} variant="outline" padding="$4">
-                        <XStack gap="$3" alignItems="center">
-                          <Avatar
-                            src={speaker.profile?.avatar_url}
-                            fallback={speaker.profile?.full_name || 'S'}
-                            size="lg"
-                          />
-                          <YStack flex={1}>
-                            <Text fontWeight="600" fontSize="$4">
-                              {speaker.profile?.full_name || 'Speaker'}
-                            </Text>
-                            <Text color="$colorSecondary" fontSize="$3">
-                              {speaker.profile?.job_title || speaker.role}
-                            </Text>
-                            {speaker.profile?.company && (
-                              <Text color="$colorTertiary" fontSize="$2">
-                                {speaker.profile.company}
+                    {speakers.map((speaker: any) => {
+                      const displayName =
+                        speaker.profile?.full_name || speaker.full_name || 'Speaker'
+                      const displayTitle =
+                        speaker.profile?.job_title || speaker.title || speaker.role
+                      const displayCompany = speaker.profile?.company || speaker.company
+                      const avatarUrl = speaker.profile?.avatar_url || speaker.headshot_url
+
+                      return (
+                        <Card key={speaker.id} variant="outline" padding="$4">
+                          <XStack gap="$3" alignItems="center">
+                            <Avatar
+                              src={avatarUrl}
+                              fallback={displayName}
+                              size="lg"
+                            />
+                            <YStack flex={1}>
+                              <Text fontWeight="600" fontSize="$4">
+                                {displayName}
                               </Text>
-                            )}
-                          </YStack>
-                        </XStack>
-                      </Card>
-                    ))}
+                              <Text color="$colorSecondary" fontSize="$3">
+                                {displayTitle}
+                              </Text>
+                              {displayCompany && (
+                                <Text color="$colorTertiary" fontSize="$2">
+                                  {displayCompany}
+                                </Text>
+                              )}
+                            </YStack>
+                          </XStack>
+                        </Card>
+                      )
+                    })}
                   </YStack>
                 )}
               </YStack>
@@ -431,26 +529,78 @@ export default function SessionDetailScreen() {
 
             {activeTab === 'qa' && (
               <YStack gap="$3" marginTop="$2">
-                <Button variant="primary" size="lg" icon={MessageCircle}>
-                  Ask a Question
+                <Button
+                  variant="primary"
+                  size="lg"
+                  icon={MessageCircle}
+                  onPress={() => setIsQuestionFormOpen((prev) => !prev)}
+                >
+                  {isQuestionFormOpen ? 'Cancel' : 'Ask a Question'}
                 </Button>
 
+                {isQuestionFormOpen && (
+                  <Card variant="outline" padding="$4">
+                    <YStack gap="$3">
+                      <TextInput
+                        value={questionDraft}
+                        onChangeText={setQuestionDraft}
+                        placeholder="What do you want to ask?"
+                        multiline
+                        numberOfLines={4}
+                        style={{
+                          minHeight: 96,
+                          borderWidth: 1,
+                          borderColor: theme.borderColor,
+                          borderRadius: 12,
+                          paddingVertical: 10,
+                          paddingHorizontal: 12,
+                          color: theme.textColor,
+                          backgroundColor: theme.cardColor,
+                          textAlignVertical: 'top',
+                        }}
+                        placeholderTextColor={theme.secondaryTextColor}
+                      />
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        onPress={() => askQuestionMutation.mutate()}
+                        disabled={!questionDraft.trim() || askQuestionMutation.isPending}
+                      >
+                        {askQuestionMutation.isPending ? 'Submitting...' : 'Submit Question'}
+                      </Button>
+                    </YStack>
+                  </Card>
+                )}
+
                 <YStack gap="$2">
+                  {questions.length === 0 && !questionsQuery.isLoading && (
+                    <Card variant="outline" padding="$5">
+                      <Text color="$colorTertiary" textAlign="center">
+                        No questions yet. Be the first to ask one.
+                      </Text>
+                    </Card>
+                  )}
+
                   {questions
+                    .slice()
                     .sort((a, b) => b.upvotes - a.upvotes)
-                    .map((q) => (
-                      <Card key={q.id} variant="outline" padding="$4">
+                    .map((question) => (
+                      <Card key={question.id} variant="outline" padding="$4">
                         <YStack gap="$2">
                           <XStack justifyContent="space-between" alignItems="flex-start">
                             <YStack flex={1} gap="$1">
                               <Text fontSize="$4" fontWeight="500">
-                                {q.question}
+                                {question.question}
                               </Text>
                               <Text color="$colorTertiary" fontSize="$2">
-                                {q.author} • {format(q.timestamp, 'h:mm a')}
+                                {question.is_anonymous
+                                  ? 'Anonymous'
+                                  : question.user?.full_name || 'Attendee'}
+                                {' - '}
+                                {format(parseISO(question.created_at), 'h:mm a')}
                               </Text>
                             </YStack>
-                            {q.isAnswered && (
+                            {question.is_answered && (
                               <XStack
                                 paddingHorizontal="$2"
                                 paddingVertical="$1"
@@ -463,22 +613,28 @@ export default function SessionDetailScreen() {
                               </XStack>
                             )}
                           </XStack>
+
                           <XStack gap="$2">
-                            <Pressable onPress={() => handleUpvoteQuestion(q.id)}>
+                            <Pressable
+                              onPress={() =>
+                                handleUpvoteQuestion(question.id, question.isUpvoted)
+                              }
+                              disabled={upvoteMutation.isPending || !user}
+                            >
                               <XStack
                                 paddingHorizontal="$3"
                                 paddingVertical="$2"
                                 borderRadius="$3"
-                                backgroundColor={q.isUpvoted ? '$accentColor' : '$backgroundStrong'}
+                                backgroundColor={question.isUpvoted ? '$accentColor' : '$backgroundStrong'}
                                 alignItems="center"
                                 gap="$2"
                               >
                                 <Text
                                   fontSize="$2"
                                   fontWeight="600"
-                                  color={q.isUpvoted ? '#FFFFFF' : '$colorSecondary'}
+                                  color={question.isUpvoted ? '#FFFFFF' : '$colorSecondary'}
                                 >
-                                  ▲ {q.upvotes}
+                                  ^ {question.upvotes}
                                 </Text>
                               </XStack>
                             </Pressable>
@@ -492,120 +648,144 @@ export default function SessionDetailScreen() {
 
             {activeTab === 'polls' && (
               <YStack gap="$3" marginTop="$2">
-                {mockPoll.isActive ? (
-                  <Card variant="default" padding="$4">
-                    <YStack gap="$4">
-                      <YStack gap="$2">
-                        <XStack justifyContent="space-between" alignItems="center">
-                          <Text fontSize="$5" fontWeight="600">
-                            Live Poll
-                          </Text>
-                          <XStack
-                            paddingHorizontal="$2"
-                            paddingVertical="$1"
-                            borderRadius="$2"
-                            backgroundColor="$success"
-                          >
-                            <Text color="#FFFFFF" fontSize="$1" fontWeight="700">
-                              ACTIVE
-                            </Text>
-                          </XStack>
-                        </XStack>
-                        <Text color="$colorSecondary" fontSize="$4">
-                          {mockPoll.question}
-                        </Text>
-                      </YStack>
+                {visiblePolls.length > 0 ? (
+                  visiblePolls.map((poll) => {
+                    const pollCounts = pollCountsQuery.data?.[poll.id] || {}
+                    const userVotes = userPollResponsesQuery.data?.[poll.id] || []
+                    const hasVoted = userVotes.length > 0
+                    const showResults = poll.show_results || hasVoted || !poll.is_active
+                    const totalVotes = Object.values(pollCounts).reduce((sum, count) => sum + count, 0)
+                    const selectedOption = selectedPollOptions[poll.id] || null
 
-                      {!hasVoted ? (
-                        <YStack gap="$2">
-                          {mockPoll.options.map((option) => (
-                            <Pressable
-                              key={option.id}
-                              onPress={() => setSelectedPollOption(option.id)}
-                            >
+                    return (
+                      <Card key={poll.id} variant="default" padding="$4">
+                        <YStack gap="$4">
+                          <YStack gap="$2">
+                            <XStack justifyContent="space-between" alignItems="center">
+                              <Text fontSize="$5" fontWeight="600">
+                                Live Poll
+                              </Text>
                               <XStack
-                                paddingVertical="$3"
-                                paddingHorizontal="$4"
-                                borderRadius="$3"
-                                borderWidth={2}
-                                borderColor={
-                                  selectedPollOption === option.id
-                                    ? '$accentColor'
-                                    : '$borderColor'
-                                }
-                                backgroundColor={
-                                  selectedPollOption === option.id
-                                    ? '$backgroundFocus'
-                                    : '$background'
-                                }
-                                alignItems="center"
-                                gap="$2"
+                                paddingHorizontal="$2"
+                                paddingVertical="$1"
+                                borderRadius="$2"
+                                backgroundColor={poll.is_active ? '$success' : '$colorTertiary'}
                               >
-                                <XStack
-                                  width={20}
-                                  height={20}
-                                  borderRadius={10}
-                                  borderWidth={2}
-                                  borderColor={
-                                    selectedPollOption === option.id
-                                      ? '$accentColor'
-                                      : '$borderColor'
-                                  }
-                                  alignItems="center"
-                                  justifyContent="center"
-                                >
-                                  {selectedPollOption === option.id && (
-                                    <XStack
-                                      width={10}
-                                      height={10}
-                                      borderRadius={5}
-                                      backgroundColor="$accentColor"
-                                    />
-                                  )}
-                                </XStack>
-                                <Text flex={1} fontSize="$3" fontWeight="500">
-                                  {option.text}
+                                <Text color="#FFFFFF" fontSize="$1" fontWeight="700">
+                                  {poll.is_active ? 'ACTIVE' : 'CLOSED'}
                                 </Text>
                               </XStack>
-                            </Pressable>
-                          ))}
-                          <Button
-                            variant="primary"
-                            size="lg"
-                            onPress={handleVote}
-                            disabled={!selectedPollOption}
-                            marginTop="$2"
-                          >
-                            Submit Vote
-                          </Button>
+                            </XStack>
+                            <Text color="$colorSecondary" fontSize="$4">
+                              {poll.question}
+                            </Text>
+                          </YStack>
+
+                          {!hasVoted && poll.is_active ? (
+                            <YStack gap="$2">
+                              {poll.options.map((option) => (
+                                <Pressable
+                                  key={option.id}
+                                  onPress={() =>
+                                    setSelectedPollOptions((prev) => ({
+                                      ...prev,
+                                      [poll.id]: option.id,
+                                    }))
+                                  }
+                                >
+                                  <XStack
+                                    paddingVertical="$3"
+                                    paddingHorizontal="$4"
+                                    borderRadius="$3"
+                                    borderWidth={2}
+                                    borderColor={
+                                      selectedOption === option.id
+                                        ? '$accentColor'
+                                        : '$borderColor'
+                                    }
+                                    backgroundColor={
+                                      selectedOption === option.id
+                                        ? '$backgroundFocus'
+                                        : '$background'
+                                    }
+                                    alignItems="center"
+                                    gap="$2"
+                                  >
+                                    <XStack
+                                      width={20}
+                                      height={20}
+                                      borderRadius={10}
+                                      borderWidth={2}
+                                      borderColor={
+                                        selectedOption === option.id
+                                          ? '$accentColor'
+                                          : '$borderColor'
+                                      }
+                                      alignItems="center"
+                                      justifyContent="center"
+                                    >
+                                      {selectedOption === option.id && (
+                                        <XStack
+                                          width={10}
+                                          height={10}
+                                          borderRadius={5}
+                                          backgroundColor="$accentColor"
+                                        />
+                                      )}
+                                    </XStack>
+                                    <Text flex={1} fontSize="$3" fontWeight="500">
+                                      {option.text}
+                                    </Text>
+                                  </XStack>
+                                </Pressable>
+                              ))}
+                              <Button
+                                variant="primary"
+                                size="lg"
+                                onPress={() => handleVote(poll.id)}
+                                disabled={!selectedOption || voteMutation.isPending || !user}
+                                marginTop="$2"
+                              >
+                                {voteMutation.isPending ? 'Submitting...' : 'Submit Vote'}
+                              </Button>
+                            </YStack>
+                          ) : (
+                            <YStack gap="$2">
+                              {poll.options.map((option) => {
+                                const optionVotes = pollCounts[option.id] || 0
+                                const percentage = totalVotes > 0
+                                  ? Math.round((optionVotes / totalVotes) * 100)
+                                  : 0
+
+                                return (
+                                  <YStack key={option.id} gap="$1">
+                                    <XStack justifyContent="space-between" alignItems="center">
+                                      <Text fontSize="$3" fontWeight="500">
+                                        {option.text}
+                                      </Text>
+                                      {showResults && (
+                                        <Text fontSize="$3" fontWeight="600" color="$accentColor">
+                                          {percentage}%
+                                        </Text>
+                                      )}
+                                    </XStack>
+                                    {showResults && (
+                                      <Progress value={percentage} max={100}>
+                                        <Progress.Indicator animation="bouncy" />
+                                      </Progress>
+                                    )}
+                                  </YStack>
+                                )
+                              })}
+                              <Text color="$colorTertiary" fontSize="$2" marginTop="$2">
+                                {totalVotes} vote{totalVotes === 1 ? '' : 's'}
+                              </Text>
+                            </YStack>
+                          )}
                         </YStack>
-                      ) : (
-                        <YStack gap="$2">
-                          {mockPoll.options.map((option) => {
-                            const percentage = (option.votes / mockPoll.totalVotes) * 100
-                            return (
-                              <YStack key={option.id} gap="$1">
-                                <XStack justifyContent="space-between" alignItems="center">
-                                  <Text fontSize="$3" fontWeight="500">
-                                    {option.text}
-                                  </Text>
-                                  <Text fontSize="$3" fontWeight="600" color="$accentColor">
-                                    {Math.round(percentage)}%
-                                  </Text>
-                                </XStack>
-                                <Progress value={percentage} max={100}>
-                                  <Progress.Indicator animation="bouncy" />
-                                </Progress>
-                              </YStack>
-                            )
-                          })}
-                          <Text color="$colorTertiary" fontSize="$2" marginTop="$2">
-                            {mockPoll.totalVotes} votes
-                          </Text>
-                        </YStack>
-                      )}
-                    </YStack>
-                  </Card>
+                      </Card>
+                    )
+                  })
                 ) : (
                   <Card variant="outline" padding="$6">
                     <YStack alignItems="center" gap="$2">
